@@ -73,10 +73,22 @@ data class PlaybackSettings(
     val lyricTouchLock: Boolean = false
 )
 
-enum class ThemePalette(val displayName: String, val primaryHex: Long, val accentHex: Long, val bgDarkHex: Long) {
+enum class ThemePalette(
+    val displayName: String,
+    val primaryHex: Long,
+    val accentHex: Long,
+    val bgDarkHex: Long,
+    val bgDrawableRes: Int? = null,
+    val isStarTheme: Boolean = false,
+    val starDescription: String? = null
+) {
     RED_BLACK("潮酷红黑", 0xFFFF3B30, 0xFFFF7A00, 0xFF121214),
     AURORA_PURPLE("极光霓虹", 0xFFAF52DE, 0xFF007AFF, 0xFF100E17),
     EMERALD_GREEN("浅夏青绿", 0xFF34C759, 0xFF30D158, 0xFF0E1712),
     SUNSET_GOLD("暮光琥珀", 0xFFFF9500, 0xFFFFCC00, 0xFF17130E),
-    CYBERPUNK("赛博幻境", 0xFF00E5FF, 0xFFFF007F, 0xFF0A0F1D)
+    CYBERPUNK("赛博幻境", 0xFF00E5FF, 0xFFFF007F, 0xFF0A0F1D),
+    // 明星背景主题装扮
+    STAR_CONCERT("巨星演唱会 · 炫光紫金", 0xFFFFD700, 0xFFAF52DE, 0xFF0D0B18, com.example.R.drawable.bg_star_concert_1790095246174, true, "万人演唱会舞台金光与聚光灯专属沉浸皮肤"),
+    STAR_SINGER("录音室巨星 · 赛博霓虹", 0xFF00E5FF, 0xFFFF2D55, 0xFF090A14, com.example.R.drawable.bg_star_singer_1790095260846, true, "潮流流行巨星录音棚黑胶电音限定背景"),
+    STAR_RETRO("民谣弹唱家 · 温暖琥珀", 0xFFFF9500, 0xFFFFCC00, 0xFF151009, com.example.R.drawable.bg_star_retro_1790095274654, true, "原声民谣吉他现场Live经典复古氛围")
 }

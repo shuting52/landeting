@@ -107,7 +107,8 @@ fun FullScreenPlayerSheet(
     onSetEqualizer: (String) -> Unit,
     onSetSpeed: (Float) -> Unit,
     onUpdateLyrics: ((List<com.example.model.LyricLine>) -> Unit)? = null,
-    onOpenEqualizer: (() -> Unit)? = null
+    onOpenEqualizer: (() -> Unit)? = null,
+    bgDrawableRes: Int? = null
 ) {
     if (song == null) return
 
@@ -141,18 +142,35 @@ fun FullScreenPlayerSheet(
         color = DarkBackground
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF20182C),
-                            DarkBackground,
-                            Color(0xFF0C0B12)
-                        )
-                    )
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
+            if (bgDrawableRes != null) {
+                Image(
+                    painter = painterResource(id = bgDrawableRes),
+                    contentDescription = "明星壁纸背景",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.82f))
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF20182C),
+                                    DarkBackground,
+                                    Color(0xFF0C0B12)
+                                )
+                            )
+                        )
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()

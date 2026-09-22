@@ -61,10 +61,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -457,22 +459,125 @@ fun SidebarDrawerContent(
 
     // 4. Dress-up Center Dialog
     if (showDressUpDialog) {
-        val palettes = ThemePalette.values()
+        val standardPalettes = ThemePalette.values().filter { !it.isStarTheme }
+        val starPalettes = ThemePalette.values().filter { it.isStarTheme }
         AlertDialog(
             onDismissRequest = { showDressUpDialog = false },
             containerColor = DarkSurfaceElevated,
             title = {
-                Text(text = "装扮中心 · 个性主题", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.ColorLens, contentDescription = null, tint = GoldVip, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "装扮中心 · 主题与明星壁纸", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(text = "选择你喜爱的视觉配色与黑胶氛围：", color = TextSecondary, fontSize = 13.sp)
-                    palettes.forEach { palette ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Star Celebrity Section
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "明星专属壁纸背景", color = GoldVip, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(GoldVip.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 1.dp)
+                        ) {
+                            Text(text = "明星特供", color = GoldVip, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    starPalettes.forEach { palette ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (palette == currentTheme) Color(0xFF2C1E3A) else DarkSurface)
+                                .border(
+                                    width = if (palette == currentTheme) 1.5.dp else 0.5.dp,
+                                    color = if (palette == currentTheme) GoldVip else DarkSurfaceBorder,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable {
+                                    onSetTheme(palette)
+                                    showDressUpDialog = false
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (palette.bgDrawableRes != null) {
+                                Image(
+                                    painter = painterResource(id = palette.bgDrawableRes),
+                                    contentDescription = palette.displayName,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(palette.primaryHex))
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = palette.displayName,
+                                        color = TextPrimary,
+                                        fontWeight = if (palette == currentTheme) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 14.sp
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0xFF3B2544))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(text = "明星高清壁纸", color = Color(0xFFFFB74D), fontSize = 9.sp)
+                                    }
+                                }
+                                if (palette.starDescription != null && palette.starDescription.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = palette.starDescription,
+                                        color = TextSecondary,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            if (palette == currentTheme) {
+                                Text(text = "使用中", fontSize = 12.sp, color = GoldVip, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    // Classic Theme Palettes Section
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "经典配色主题", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+
+                    standardPalettes.forEach { palette ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(DarkSurface)
+                                .border(
+                                    width = if (palette == currentTheme) 1.dp else 0.dp,
+                                    color = if (palette == currentTheme) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
                                 .clickable {
                                     onSetTheme(palette)
                                     showDressUpDialog = false

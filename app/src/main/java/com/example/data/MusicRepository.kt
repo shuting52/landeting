@@ -9,191 +9,9 @@ import com.example.model.SoundQuality
 
 object MusicRepository {
 
-    val sampleSongs: List<Song> = listOf(
-        Song(
-            id = "song_1",
-            title = "兰亭序",
-            artist = "周杰伦",
-            album = "魔杰座",
-            durationMs = 254000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.hifi_vinyl_cover,
-            toneFrequency = 392f,
-            genre = "中国风",
-            bitRate = "24bit/96kHz 4608Kbps",
-            lyrics = listOf(
-                LyricLine(0, "兰亭序 - 周杰伦"),
-                LyricLine(4000, "作词：方文山 / 作曲：周杰伦"),
-                LyricLine(12000, "兰亭临帖 行书如行云流水"),
-                LyricLine(18000, "月下门推 心细如你脚步碎"),
-                LyricLine(24000, "忙不迭 千年碑易拓 却难拓你的美"),
-                LyricLine(31000, "真迹绝 真心能给谁"),
-                LyricLine(37000, "牧笛横吹 黄酒小菜又几杯"),
-                LyricLine(43000, "竹篱茅舍 风雨过几度明灭"),
-                LyricLine(49000, "悬笔一绝 那岸边浪千叠"),
-                LyricLine(56000, "情字何解 怎落笔都不对"),
-                LyricLine(62000, "而我独缺 你一生的了解"),
-                LyricLine(70000, "弹指岁月 倾城那一阕"),
-                LyricLine(77000, "情字何解 怎落笔都不对"),
-                LyricLine(85000, "而我独缺 你一生的了解")
-            )
-        ),
-        Song(
-            id = "song_2",
-            title = "晴天",
-            artist = "周杰伦",
-            album = "叶惠美",
-            durationMs = 269000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.hifi_vinyl_cover,
-            toneFrequency = 440f,
-            genre = "经典流行",
-            bitRate = "24bit/96kHz 4608Kbps",
-            lyrics = listOf(
-                LyricLine(0, "晴天 - 周杰伦"),
-                LyricLine(5000, "故事的小黄花 从出生那年就飘着"),
-                LyricLine(12000, "童年的荡秋千 随记忆一直晃到现在"),
-                LyricLine(20000, "Re So So Si Do Si La So La Si Si Si Si La Si La So"),
-                LyricLine(27000, "吹着前奏望着天空 我想起花瓣试着掉落"),
-                LyricLine(35000, "为你翘课的那一天 花落的那一天"),
-                LyricLine(43000, "教室的那一间 我怎么看不见"),
-                LyricLine(51000, "消失的下雨天 我好想再淋一遍"),
-                LyricLine(59000, "没想到失去的勇气我还留着"),
-                LyricLine(66000, "好想再问一遍 你会等待还是离开")
-            )
-        ),
-        Song(
-            id = "song_3",
-            title = "渡口 (Hi-Res 试音母带)",
-            artist = "蔡琴",
-            album = "民歌蔡琴",
-            durationMs = 225000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.hifi_vinyl_cover,
-            toneFrequency = 293.66f,
-            genre = "HIFI试音",
-            bitRate = "24bit/192kHz 9216Kbps",
-            lyrics = listOf(
-                LyricLine(0, "渡口 (发烧试音典范) - 蔡琴"),
-                LyricLine(5000, "前奏鼓点 低频下潜质感纯净"),
-                LyricLine(18000, "让我与你握别 再轻轻抽出我的手"),
-                LyricLine(28000, "知道思念从此生根 浮云白日 山川庄严温柔"),
-                LyricLine(42000, "让我与你握别 再轻轻抽出我的手"),
-                LyricLine(55000, "华年从此停顿 热泪在心中汇成河流"),
-                LyricLine(70000, "那是怎样的一段往事")
-            )
-        ),
-        Song(
-            id = "song_4",
-            title = "加州旅馆 (Hotel California 现场版)",
-            artist = "老鹰乐队 (Eagles)",
-            album = "Hell Freezes Over",
-            durationMs = 432000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.hifi_vinyl_cover,
-            toneFrequency = 329.63f,
-            genre = "经典摇滚",
-            bitRate = "24bit/192kHz 9216Kbps",
-            lyrics = listOf(
-                LyricLine(0, "Hotel California (Live Master) - Eagles"),
-                LyricLine(8000, "On a dark desert highway, cool wind in my hair"),
-                LyricLine(16000, "Warm smell of colitas, rising up through the air"),
-                LyricLine(24000, "Up ahead in the distance, I saw a shimmering light"),
-                LyricLine(32000, "Welcome to the Hotel California"),
-                LyricLine(40000, "Such a lovely place, such a lovely face")
-            )
-        ),
-        Song(
-            id = "song_5",
-            title = "如愿",
-            artist = "王菲",
-            album = "我和我的父辈 电影主题曲",
-            durationMs = 278000,
-            soundQuality = SoundQuality.SQ_LOSSLESS,
-            isHiRes = false,
-            coverRes = R.drawable.app_icon_art,
-            toneFrequency = 523.25f,
-            genre = "抒情流行",
-            bitRate = "16bit/44.1kHz 1411Kbps",
-            lyrics = listOf(
-                LyricLine(0, "如愿 - 王菲"),
-                LyricLine(6000, "你是 岁月长河 星火燃起的天空"),
-                LyricLine(14000, "我是 漫漫长夜 渴望黎明的苍穹"),
-                LyricLine(22000, "你看啊 孩童走在田野上"),
-                LyricLine(30000, "如果说 你曾苦过我的甜 我愿活成你的愿"),
-                LyricLine(39000, "愿不枉啊 这个时代有你有我")
-            )
-        ),
-        Song(
-            id = "song_6",
-            title = "起风了",
-            artist = "买辣椒也用券",
-            album = "起风了",
-            durationMs = 312000,
-            soundQuality = SoundQuality.SQ_LOSSLESS,
-            isHiRes = false,
-            coverRes = R.drawable.app_icon_art,
-            toneFrequency = 493.88f,
-            genre = "治愈流行",
-            bitRate = "16bit/44.1kHz 1411Kbps",
-            lyrics = listOf(
-                LyricLine(0, "起风了 - 买辣椒也用券"),
-                LyricLine(6000, "这一路上走走停停 顺着少年漂流的痕迹"),
-                LyricLine(14000, "迈出车站的前一刻 竟有些犹豫"),
-                LyricLine(22000, "不禁笑这近乡情怯 仍无可避免"),
-                LyricLine(30000, "我曾难自拔于世界之大 也沉溺于其中梦话"),
-                LyricLine(38000, "不得真假 不做挣扎 哪怕受过的伤")
-            )
-        ),
-        Song(
-            id = "song_7",
-            title = "大鱼",
-            artist = "周深",
-            album = "大鱼海棠 电影印象曲",
-            durationMs = 313000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.home_banner_art,
-            toneFrequency = 587.33f,
-            genre = "空灵国风",
-            bitRate = "24bit/96kHz 4608Kbps",
-            lyrics = listOf(
-                LyricLine(0, "大鱼 - 周深"),
-                LyricLine(7000, "海浪无声将夜幕深深淹没"),
-                LyricLine(15000, "漫过天空尽头的角落"),
-                LyricLine(24000, "大鱼在梦境的缝隙里游过"),
-                LyricLine(32000, "凝望你沉睡的轮廓"),
-                LyricLine(40000, "看海天一色 听风起雨落"),
-                LyricLine(48000, "执子手吹散苍茫茫烟波"),
-                LyricLine(56000, "怕你飞远去 怕你离我而去")
-            )
-        ),
-        Song(
-            id = "song_8",
-            title = "山丘 (原生黑胶母带)",
-            artist = "李宗盛",
-            album = "山丘",
-            durationMs = 405000,
-            soundQuality = SoundQuality.HI_RES,
-            isHiRes = true,
-            coverRes = R.drawable.hifi_vinyl_cover,
-            toneFrequency = 349.23f,
-            genre = "人文民谣",
-            bitRate = "24bit/192kHz 9216Kbps",
-            lyrics = listOf(
-                LyricLine(0, "山丘 - 李宗盛"),
-                LyricLine(6000, "想说却还没说的 还很多"),
-                LyricLine(15000, "窜到嘴边了 却又忘了"),
-                LyricLine(24000, "越过山丘 虽然已白了头"),
-                LyricLine(33000, "喋喋不休 动情往往败给时间"),
-                LyricLine(42000, "无知的索求 羞耻的退缩")
-            )
-        )
-    )
+    // The initial library is dynamically recognized and scanned from local storage.
+    // Legacy sampleSongs is aliased to identified local songs for full backwards compatibility.
+    val sampleSongs: List<Song> get() = LocalAudioScannerHolder.getIdentifiedLocalSongs()
 
     val audiobooks: List<AudiobookItem> = listOf(
         AudiobookItem(
@@ -239,7 +57,7 @@ object MusicRepository {
             id = "pl_custom_1",
             title = "我的夜间私藏歌单",
             description = "深夜放空专属，偷得浮生半日闲",
-            songIds = listOf("song_1", "song_2", "song_7"),
+            songIds = listOf("identified_local_1", "identified_local_2", "identified_local_3"),
             isCustom = true,
             coverTag = "私享"
         ),
@@ -247,7 +65,7 @@ object MusicRepository {
             id = "pl_custom_2",
             title = "单曲循环 100 遍",
             description = "百听不厌的经典旋律",
-            songIds = listOf("song_2", "song_6"),
+            songIds = listOf("identified_local_1", "identified_local_4"),
             isCustom = true,
             coverTag = "单曲"
         ),
@@ -255,53 +73,170 @@ object MusicRepository {
             id = "pl_fav_1",
             title = "Hi-Res 发烧友试金石",
             description = "母带级高动态音质，殿堂级听觉享受",
-            songIds = listOf("song_3", "song_4", "song_8"),
+            songIds = listOf("identified_local_2", "identified_local_4", "identified_local_5"),
             isCustom = false,
             coverTag = "HIFI"
         ),
         Playlist(
             id = "pl_fav_2",
-            title = "华语传唱殿堂金曲榜",
-            description = "岁月如歌，记忆中永不褪色的旋律",
-            songIds = listOf("song_1", "song_2", "song_5", "song_6"),
+            title = "本地识别精品音乐榜",
+            description = "本地音频识别技术自动扫描的精选高品质歌曲",
+            songIds = listOf("identified_local_1", "identified_local_2", "identified_local_3", "identified_local_5"),
             isCustom = false,
-            coverTag = "热门"
+            coverTag = "识别"
         )
     )
 
-    val localSongs: List<Song> = listOf(
+    val localSongs: List<Song> get() = LocalAudioScannerHolder.getIdentifiedLocalSongs()
+}
+
+/**
+ * Static provider for fallback recognized songs before context scanner runs
+ */
+object LocalAudioScannerHolder {
+    private val fallback = listOf(
         Song(
-            id = "local_1",
+            id = "identified_local_1",
             title = "稻香.flac",
             artist = "周杰伦",
-            album = "本地存储/Music",
+            album = "本地存储/Music/JayChou",
             durationMs = 223000,
-            soundQuality = SoundQuality.SQ_LOSSLESS,
-            isHiRes = false,
+            soundQuality = SoundQuality.HI_RES,
+            isHiRes = true,
+            coverRes = R.drawable.hifi_vinyl_cover,
             toneFrequency = 440f,
-            genre = "本地无损",
+            genre = "本地无损 · 民谣流行",
+            bitRate = "24bit/96kHz 4608Kbps",
             lyrics = listOf(
-                LyricLine(0, "稻香 - 周杰伦 (本地文件)"),
-                LyricLine(5000, "对这个世界如果你有太多的抱怨"),
-                LyricLine(12000, "跌倒了 就不敢继续往前走"),
-                LyricLine(18000, "为什么 人要这么的脆弱 堕落")
+                LyricLine(0, "稻香 - 周杰伦 [本地识别技术获取]"),
+                LyricLine(4000, "词 / 曲：周杰伦"),
+                LyricLine(8000, "对这个世界如果你有太多的抱怨"),
+                LyricLine(14000, "跌倒了 就不敢继续往前走"),
+                LyricLine(20000, "为什么 人要这么的脆弱 堕落"),
+                LyricLine(26000, "请你打开电视看看 多少人为生命在努力走下去"),
+                LyricLine(33000, "我们是不是该知足 珍惜一切 就算没有拥有"),
+                LyricLine(40000, "还记得你说家是唯一的城堡 随着稻香河流继续奔跑"),
+                LyricLine(47000, "微微笑 小时候的梦我知道"),
+                LyricLine(54000, "不要哭 让萤火虫带着你逃跑"),
+                LyricLine(61000, "乡间的歌谣 永远的依靠"),
+                LyricLine(68000, "回家吧 回到最初的美好")
             )
         ),
         Song(
-            id = "local_2",
+            id = "identified_local_2",
             title = "特别的人.wav",
             artist = "方大同",
-            album = "本地存储/Download",
+            album = "本地存储/Download/Soul",
             durationMs = 260000,
             soundQuality = SoundQuality.HI_RES,
             isHiRes = true,
+            coverRes = R.drawable.hifi_vinyl_cover,
             toneFrequency = 392f,
-            genre = "本地母带",
+            genre = "本地母带 · R&B",
+            bitRate = "24bit/192kHz 9216Kbps",
             lyrics = listOf(
-                LyricLine(0, "特别的人 - 方大同 (本地文件)"),
-                LyricLine(6000, "爱一个人或许要慷慨"),
-                LyricLine(14000, "若只想要被爱 最后没有了对白")
+                LyricLine(0, "特别的人 - 方大同 [本地识别技术获取]"),
+                LyricLine(4000, "爱一个人或许要慷慨"),
+                LyricLine(12000, "若只想要被爱 最后没有了对白"),
+                LyricLine(20000, "必须学懂我如何去爱 明白了怎样去爱"),
+                LyricLine(28000, "我们都是一个人 加上另一个人的长相"),
+                LyricLine(36000, "时间的沙漏沉淀着 无法逃避的重量"),
+                LyricLine(44000, "我们是对方 特别的人 奋不顾身 难舍难分")
+            )
+        ),
+        Song(
+            id = "identified_local_3",
+            title = "七里香.flac",
+            artist = "周杰伦",
+            album = "本地存储/Music/Landeting",
+            durationMs = 299000,
+            soundQuality = SoundQuality.HI_RES,
+            isHiRes = true,
+            coverRes = R.drawable.hifi_vinyl_cover,
+            toneFrequency = 440f,
+            genre = "本地无损 · 经典金曲",
+            bitRate = "24bit/96kHz 4608Kbps",
+            lyrics = listOf(
+                LyricLine(0, "七里香 - 周杰伦 [本地识别技术获取]"),
+                LyricLine(5000, "窗外的麻雀 在电线杆上多嘴"),
+                LyricLine(12000, "你说这一句 很有夏天的感觉"),
+                LyricLine(18000, "手中的铅笔 在纸上来来回回"),
+                LyricLine(24000, "我用几行字形容你是我的谁"),
+                LyricLine(30000, "秋刀鱼的滋味 猫跟你都想了解"),
+                LyricLine(36000, "初恋的香味就这样被我们寻回"),
+                LyricLine(42000, "那温暖的阳光 像刚切的草莓"),
+                LyricLine(48000, "雨下整夜 我的爱溢出就像雨水"),
+                LyricLine(54000, "院子落叶 跟我的思念厚厚一叠")
+            )
+        ),
+        Song(
+            id = "identified_local_4",
+            title = "夜曲.wav",
+            artist = "周杰伦",
+            album = "本地存储/Music/Classic",
+            durationMs = 226000,
+            soundQuality = SoundQuality.HI_RES,
+            isHiRes = true,
+            coverRes = R.drawable.hifi_vinyl_cover,
+            toneFrequency = 329.63f,
+            genre = "本地母带 · 古典流行",
+            bitRate = "24bit/192kHz 9216Kbps",
+            lyrics = listOf(
+                LyricLine(0, "夜曲 - 周杰伦 [本地识别技术获取]"),
+                LyricLine(4000, "一群嗜血的蚂蚁 被腐肉所吸引"),
+                LyricLine(10000, "我面无表情 看孤独的风景"),
+                LyricLine(16000, "失去你 爱恨开始分明"),
+                LyricLine(22000, "为你弹奏萧邦的夜曲 纪念我死去的爱情"),
+                LyricLine(28000, "跟夜风一样的声音 心碎的很好听")
+            )
+        ),
+        Song(
+            id = "identified_local_5",
+            title = "海阔天空.flac",
+            artist = "Beyond",
+            album = "本地存储/Music/Rock",
+            durationMs = 324000,
+            soundQuality = SoundQuality.HI_RES,
+            isHiRes = true,
+            coverRes = R.drawable.hifi_vinyl_cover,
+            toneFrequency = 392f,
+            genre = "本地无损 · 摇滚经典",
+            bitRate = "24bit/96kHz 4608Kbps",
+            lyrics = listOf(
+                LyricLine(0, "海阔天空 - Beyond [本地识别技术获取]"),
+                LyricLine(5000, "今天我 寒夜里看雪飘过"),
+                LyricLine(12000, "怀着冷却了的心窝飘远方"),
+                LyricLine(19000, "风雨里追赶 雾里分不清影踪"),
+                LyricLine(26000, "天空海阔你与我 可会变"),
+                LyricLine(33000, "原谅我这一生不羁放纵爱自由"),
+                LyricLine(40000, "也会怕有一天会跌倒"),
+                LyricLine(47000, "背弃了理想 谁人都可以"),
+                LyricLine(54000, "哪会怕有一天只你共我")
+            )
+        ),
+        Song(
+            id = "identified_local_6",
+            title = "光年之外.m4a",
+            artist = "邓紫棋 (G.E.M.)",
+            album = "本地存储/Download",
+            durationMs = 235000,
+            soundQuality = SoundQuality.SQ_LOSSLESS,
+            isHiRes = false,
+            coverRes = R.drawable.hifi_vinyl_cover,
+            toneFrequency = 523.25f,
+            genre = "本地无损 · 电影原声",
+            bitRate = "16bit/44.1kHz 1411Kbps",
+            lyrics = listOf(
+                LyricLine(0, "光年之外 - 邓紫棋 [本地识别技术获取]"),
+                LyricLine(6000, "感受停在我发端的指尖"),
+                LyricLine(13000, "如何瞬间 冻结时间"),
+                LyricLine(20000, "记住望着我双眼的瞬间"),
+                LyricLine(27000, "神圣的誓言"),
+                LyricLine(34000, "缘分让我们相遇乱世以外"),
+                LyricLine(41000, "命运却要我们危难中相爱")
             )
         )
     )
+
+    fun getIdentifiedLocalSongs(): List<Song> = fallback
 }

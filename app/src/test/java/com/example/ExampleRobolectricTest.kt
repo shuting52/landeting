@@ -70,4 +70,46 @@ class ExampleRobolectricTest {
     assertEquals(6.0f, customState.bands[0].gain)
     assert(customState.isCustom)
   }
+
+  @Test
+  fun `test online music catalog search matches known singer and unknown singer`() {
+    // 1. Known singer search
+    val jayResults = com.example.data.OnlineMusicCatalog.search("周杰伦")
+    assert(jayResults.isNotEmpty())
+    assert(jayResults.any { it.artist.contains("周杰伦") })
+
+    // 2. English / International singer search
+    val swiftResults = com.example.data.OnlineMusicCatalog.search("Taylor Swift")
+    assert(swiftResults.isNotEmpty())
+    assert(swiftResults.any { it.artist.contains("Taylor Swift") })
+
+    // 3. Dynamic generation for arbitrary query
+    val arbitraryResults = com.example.data.OnlineMusicCatalog.search("未知宝藏歌手")
+    assert(arbitraryResults.isNotEmpty())
+    assert(arbitraryResults.first().artist == "未知宝藏歌手" || arbitraryResults.first().title.contains("未知宝藏歌手"))
+  }
+
+  @Test
+  fun `test celebrity star themes configured in ThemePalette`() {
+    val starThemes = com.example.model.ThemePalette.values().filter { it.isStarTheme }
+    assertEquals(3, starThemes.size)
+    starThemes.forEach { theme ->
+      assert(theme.bgDrawableRes != null)
+      assert(theme.starDescription.isNotEmpty())
+    }
+  }
+
+  @Test
+  fun `test local audio scanner returns recognized songs`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val scanner = com.example.data.LocalAudioScanner(context)
+    val songs = scanner.scanAndRecognizeDeviceSongs()
+    assert(songs.isNotEmpty())
+    // Should have valid song attributes recognized
+    val first = songs.first()
+    assert(first.title.isNotEmpty())
+    assert(first.artist.isNotEmpty())
+    assert(first.durationMs > 0)
+    assert(first.soundQuality != null)
+  }
 }

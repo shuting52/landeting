@@ -60,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -133,6 +134,7 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val youthModeActive by viewModel.youthModeActive.collectAsStateWithLifecycle()
     val recognitionState by viewModel.recognitionState.collectAsStateWithLifecycle()
     val showFullScreenPlayer by viewModel.showFullScreenPlayer.collectAsStateWithLifecycle()
+    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
 
     var showSettingsScreen by remember { mutableStateOf(false) }
 
@@ -179,12 +181,30 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 }
             }
         ) {
-            Scaffold(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag("main_app_scaffold"),
-                containerColor = DarkBackground,
-                topBar = {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // If star theme is selected, draw celebrity wallpaper
+                val bgRes = currentTheme.bgDrawableRes
+                if (bgRes != null) {
+                    Image(
+                        painter = painterResource(id = bgRes),
+                        contentDescription = "明星壁纸背景",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Semi-transparent overlay to keep text readable
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.78f))
+                    )
+                }
+
+                Scaffold(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("main_app_scaffold"),
+                    containerColor = if (currentTheme.bgDrawableRes != null) Color.Transparent else DarkBackground,
+                    topBar = {
                     // Top App Bar
                     Row(
                         modifier = Modifier
@@ -360,7 +380,10 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                             currentPlayingSongId = currentSong?.id,
                             onSelectSubTab = { viewModel.setHomeSubTab(it) },
                             onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-                            onPlaySong = { viewModel.playSong(it) }
+                            onPlaySong = { viewModel.playSong(it) },
+                            localSongs = localSongs,
+                            isSearching = isSearching,
+                            onScanLocalSongs = { viewModel.scanLocalSongs() }
                         )
                         MainTab.HIFI -> HifiScreen(
                             currentPlayingSongId = currentSong?.id,
@@ -381,6 +404,7 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 }
             }
         }
+    }
 
         // Full Screen Vinyl Turntable Player
         AnimatedVisibility(
@@ -407,7 +431,8 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 onSetEqualizer = { viewModel.setEqualizerPreset(it) },
                 onSetSpeed = { viewModel.setPlaybackSpeed(it) },
                 onUpdateLyrics = { viewModel.updateCurrentSongLyrics(it) },
-                onOpenEqualizer = { viewModel.openEqualizerPanel() }
+                onOpenEqualizer = { viewModel.openEqualizerPanel() },
+                bgDrawableRes = currentTheme.bgDrawableRes
             )
         }
 

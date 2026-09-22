@@ -73,8 +73,12 @@ fun HomeScreen(
     onSelectSubTab: (HomeSubTab) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onPlaySong: (Song) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    localSongs: List<Song> = emptyList(),
+    isSearching: Boolean = false,
+    onScanLocalSongs: (() -> Unit)? = null
 ) {
+    val displaySongs = if (localSongs.isNotEmpty()) localSongs else MusicRepository.localSongs
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -146,6 +150,7 @@ fun HomeScreen(
             SearchResultsSection(
                 query = searchQuery,
                 results = searchResults,
+                isSearching = isSearching,
                 currentPlayingSongId = currentPlayingSongId,
                 onPlaySong = onPlaySong
             )
@@ -184,14 +189,18 @@ fun HomeScreen(
             // Tab Content
             when (currentSubTab) {
                 HomeSubTab.HOT -> HotTabContent(
+                    songs = displaySongs,
                     currentPlayingSongId = currentPlayingSongId,
-                    onPlaySong = onPlaySong
+                    onPlaySong = onPlaySong,
+                    onScanLocalSongs = onScanLocalSongs
                 )
                 HomeSubTab.DISCOVER -> DiscoverTabContent(
+                    songs = displaySongs,
                     currentPlayingSongId = currentPlayingSongId,
                     onPlaySong = onPlaySong
                 )
                 HomeSubTab.RECOMMEND -> RecommendTabContent(
+                    songs = displaySongs,
                     currentPlayingSongId = currentPlayingSongId,
                     onPlaySong = onPlaySong
                 )
@@ -225,6 +234,7 @@ fun HomeScreen(
 private fun SearchResultsSection(
     query: String,
     results: List<Song>,
+    isSearching: Boolean,
     currentPlayingSongId: String?,
     onPlaySong: (Song) -> Unit
 ) {
@@ -235,15 +245,29 @@ private fun SearchResultsSection(
             .testTag("search_results_list")
     ) {
         item {
-            Text(
-                text = "找到与 “$query” 相关的歌曲 (${results.size})",
-                fontSize = 13.sp,
-                color = TextSecondary,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "全网 & 本地搜索 “$query” (${results.size})",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
+                if (isSearching) {
+                    Text(
+                        text = "正在联网搜索...",
+                        fontSize = 12.sp,
+                        color = HiResGold
+                    )
+                }
+            }
         }
 
-        if (results.isEmpty()) {
+        if (results.isEmpty() && !isSearching) {
             item {
                 Box(
                     modifier = Modifier
@@ -268,8 +292,10 @@ private fun SearchResultsSection(
 
 @Composable
 private fun HotTabContent(
+    songs: List<Song>,
     currentPlayingSongId: String?,
-    onPlaySong: (Song) -> Unit
+    onPlaySong: (Song) -> Unit,
+    onScanLocalSongs: (() -> Unit)? = null
 ) {
     LazyColumn(
         modifier = Modifier
@@ -313,10 +339,10 @@ private fun HotTabContent(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "懒听实时热歌飙升榜", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = "懒听实时本地热歌 TOP 榜", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = "精选千万歌友单曲循环经典", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text(text = "通过本地音频识别引擎自动获取高保真音质", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
@@ -328,21 +354,44 @@ private fun HotTabContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "热门榜单 TOP 榜", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "一键播放全部",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable {
-                        MusicRepository.sampleSongs.firstOrNull()?.let { onPlaySong(it) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "热门榜单 TOP 榜", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFF2C223E))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(text = "本地识别", color = HiResGold, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                     }
-                )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onScanLocalSongs != null) {
+                        Text(
+                            text = "识别扫描",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .clickable { onScanLocalSongs() }
+                                .padding(end = 12.dp)
+                        )
+                    }
+                    Text(
+                        text = "一键播放全部",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable {
+                            songs.firstOrNull()?.let { onPlaySong(it) }
+                        }
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        itemsIndexed(MusicRepository.sampleSongs) { index, song ->
+        itemsIndexed(songs) { index, song ->
             SongRankingItem(
                 rank = index + 1,
                 song = song,
@@ -357,6 +406,7 @@ private fun HotTabContent(
 
 @Composable
 private fun DiscoverTabContent(
+    songs: List<Song>,
     currentPlayingSongId: String?,
     onPlaySong: (Song) -> Unit
 ) {
@@ -377,8 +427,7 @@ private fun DiscoverTabContent(
                             .background(DarkSurfaceElevated)
                             .border(1.dp, DarkSurfaceBorder, RoundedCornerShape(12.dp))
                             .clickable {
-                                // Filter genre or play
-                                MusicRepository.sampleSongs.firstOrNull()?.let { onPlaySong(it) }
+                                songs.firstOrNull()?.let { onPlaySong(it) }
                             }
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
@@ -394,7 +443,7 @@ private fun DiscoverTabContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        items(MusicRepository.sampleSongs.shuffled()) { song ->
+        items(songs.shuffled()) { song ->
             SongRowItem(
                 song = song,
                 isPlaying = song.id == currentPlayingSongId,
@@ -408,6 +457,7 @@ private fun DiscoverTabContent(
 
 @Composable
 private fun RecommendTabContent(
+    songs: List<Song>,
     currentPlayingSongId: String?,
     onPlaySong: (Song) -> Unit
 ) {
@@ -442,7 +492,7 @@ private fun RecommendTabContent(
                             .clip(RoundedCornerShape(20.dp))
                             .background(MaterialTheme.colorScheme.primary)
                             .clickable {
-                                MusicRepository.sampleSongs.firstOrNull()?.let { onPlaySong(it) }
+                                songs.firstOrNull()?.let { onPlaySong(it) }
                             }
                             .padding(horizontal = 14.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -458,7 +508,7 @@ private fun RecommendTabContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        items(MusicRepository.sampleSongs) { song ->
+        items(songs) { song ->
             SongRowItem(
                 song = song,
                 isPlaying = song.id == currentPlayingSongId,
