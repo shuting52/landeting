@@ -1,6 +1,6 @@
 {
   "name": "懒得听",
-  "description": "全中文高品质音乐播放器，支持开屏动画、听歌识曲、睡眠定时、HIFI专区与深度自定义设置",
+  "description": "全中文高品质音乐播放器，支持开屏动画、听歌识曲、睡眠定时、HIFI专区、本地音乐扫描、网络音乐搜索与自动更新（动态卡通更新弹窗 + APK 自动下载安装升级）",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -17,8 +17,13 @@ android {
     applicationId = "com.landeting"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 2
+    versionName = "1.0.1"
+
+    // 版本更新检查地址（生产环境通过环境变量 UPDATE_CHECK_URL 注入；
+    // 留空时 AppUpdateChecker 会回退到内置 assets/update_demo.json 演示配置）
+    val updateCheckUrl = (System.getenv("UPDATE_CHECK_URL") ?: "").replace("\"", "\\\"")
+    buildConfigField("String", "UPDATE_CHECK_URL", "\"$updateCheckUrl\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

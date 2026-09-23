@@ -68,7 +68,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.BuildConfig
 import com.example.model.PlayMode
+import com.example.ui.components.CartoonUpdateDialog
 import com.example.ui.components.EqualizerBottomSheet
 import com.example.ui.components.FullScreenPlayerSheet
 import com.example.ui.components.MiniPlayerBar
@@ -89,6 +91,7 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.MainTab
 import com.example.viewmodel.MusicPlayerViewModel
+import com.example.update.UpdateState
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -135,6 +138,7 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val recognitionState by viewModel.recognitionState.collectAsStateWithLifecycle()
     val showFullScreenPlayer by viewModel.showFullScreenPlayer.collectAsStateWithLifecycle()
     val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     var showSettingsScreen by remember { mutableStateOf(false) }
 
@@ -148,8 +152,10 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
         SettingsScreen(
             settings = playbackSettings,
             currentEqPreset = equalizerState.currentPresetName,
+            currentVersion = BuildConfig.VERSION_NAME,
             onOpenEqualizer = { viewModel.openEqualizerPanel() },
             onUpdateSettings = { viewModel.updateSettings(it) },
+            onCheckUpdate = { viewModel.checkForUpdate(manual = true) },
             onBack = { showSettingsScreen = false }
         )
     } else {
@@ -449,6 +455,21 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 onSaveCustomPreset = { viewModel.saveCustomPreset(it) },
                 onReset = { viewModel.resetEqualizer() },
                 onDismiss = { viewModel.closeEqualizerPanel() }
+            )
+        }
+
+        // 全新动态卡通更新弹窗（覆盖所有界面，自动/手动触发）
+        if (updateState !is UpdateState.Idle && updateState !is UpdateState.Checking) {
+            CartoonUpdateDialog(
+                state = updateState,
+                currentVersion = BuildConfig.VERSION_NAME,
+                newVersion = viewModel.latestVersionName,
+                onStartDownload = { viewModel.startUpdateDownload() },
+                onInstall = { viewModel.installUpdate() },
+                onOpenInstallSettings = { viewModel.openInstallPermissionSettings() },
+                onDismiss = { viewModel.dismissUpdate() },
+                onRetry = { viewModel.retryUpdate() },
+                onDone = { viewModel.dismissUpdate() }
             )
         }
     }

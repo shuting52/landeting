@@ -3,9 +3,11 @@ package com.example.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.BuildConfig
 import com.example.data.EqualizerRepository
 import com.example.data.LocalAudioScanner
 import com.example.data.MusicRepository
+import com.example.data.NetworkMusicSearcher
 import com.example.data.OnlineMusicCatalog
 import com.example.data.local.AppDatabase
 import com.example.model.AudiobookItem
@@ -20,6 +22,12 @@ import com.example.model.Song
 import com.example.model.SoundQuality
 import com.example.model.ThemePalette
 import com.example.player.AudioEngine
+import com.example.update.AppInstaller
+import com.example.update.AppUpdateChecker
+import com.example.update.ApkDownloader
+import com.example.update.UpdateInfo
+import com.example.update.UpdateInstallReceiver
+import com.example.update.UpdateState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class MainTab(val label: String) {
     HOME("首页"),
@@ -53,6 +62,9 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val audioEngine = AudioEngine()
     private val equalizerRepository = EqualizerRepository(AppDatabase.getInstance(application).equalizerDao())
     private val localAudioScanner = LocalAudioScanner(application)
+    private val appUpdateChecker = AppUpdateChecker(application)
+    private val apkDownloader = ApkDownloader(application)
+    private val appInstaller = AppInstaller(application)
     private var progressJob: Job? = null
     private var sleepTimerJob: Job? = null
     private var searchJob: Job? = null
@@ -160,6 +172,16 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _recognitionState = MutableStateFlow<RecognitionState>(RecognitionState.Idle)
     val recognitionState: StateFlow<RecognitionState> = _recognitionState.asStateFlow()
 
+    // ============ 自动更新 ============
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
+
+    private var latestUpdateInfo: UpdateInfo? = null
+    private var downloadedApkFile: File? = null
+
+    /** 是否已做过自动检查（每次启动只自动检查一次） */
+    private var autoCheckDone = false
+
     init {
         // Auto-dismiss splash screen after 2.5 seconds
         viewModelScope.launch {
@@ -185,6 +207,25 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             equalizerRepository.customPresetsFlow.collect { presets ->
                 _customEqPresets.value = presets
             }
+        }
+
+        // 订阅 PackageInstaller 安装结果
+        viewModelScope.launch {
+            UpdateInstallReceiver.Results.flow.collect { (success, message) ->
+                if (success) {
+                    _updateState.value = UpdateState.Done(installed = true)
+                } else {
+                    _updateState.value = UpdateState.Error(
+                        message.ifBlank { "安装失败，请检查是否已开启「允许安装未知应用」权限" }
+                    )
+                }
+            }
+        }
+
+        // 开屏结束后自动检测一次新版本
+        viewModelScope.launch {
+            delay(3600)
+            checkForUpdate(manual = false)
         }
     }
 
@@ -302,17 +343,31 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
         searchJob = viewModelScope.launch {
             _isSearching.value = true
-            // Instant local search
+            // 轻微防抖，避免输入过程频繁请求
+            delay(300)
+            if (query != _searchQuery.value) return@launch
+
+            // 1) 本地扫描曲库匹配
             val localMatches = _localSongs.value.filter {
                 it.title.contains(query, ignoreCase = true) ||
                         it.artist.contains(query, ignoreCase = true) ||
                         it.album.contains(query, ignoreCase = true) ||
                         it.genre.contains(query, ignoreCase = true)
             }
-            // Online network singer / song search
-            val onlineMatches = OnlineMusicCatalog.search(query)
-            
-            // Combine results without duplicates (local preferred, then network)
+
+            // 2) 真实网络搜索（网易云公开接口），失败/无结果时回退内置曲库
+            val networkResults = try {
+                NetworkMusicSearcher.search(query)
+            } catch (_: Exception) {
+                emptyList()
+            }
+            val onlineMatches = if (networkResults.isNotEmpty()) {
+                networkResults
+            } else {
+                OnlineMusicCatalog.search(query)
+            }
+
+            // 组合结果去重（本地优先，再补网络）
             val combined = (localMatches + onlineMatches).distinctBy { "${it.title}_${it.artist}" }
             _searchResults.value = combined
             _isSearching.value = false
@@ -536,6 +591,92 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun resetRecognition() {
         _recognitionState.value = RecognitionState.Idle
+    }
+
+    // ============ 自动更新流程 ============
+
+    /** 检查新版本：manual=true 来自设置页手动触发；false 为开屏自动检查 */
+    fun checkForUpdate(manual: Boolean) {
+        if (_updateState.value is UpdateState.Checking) return
+        if (!manual && autoCheckDone) return
+        autoCheckDone = true
+
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Checking
+            val latest = appUpdateChecker.fetchLatestInfo()
+            if (latest != null && appUpdateChecker.hasNewVersion(latest)) {
+                latestUpdateInfo = latest
+                _updateState.value = UpdateState.Found(latest)
+            } else {
+                if (manual) {
+                    _updateState.value = UpdateState.Error(
+                        "当前已是最新版本 v${BuildConfig.VERSION_NAME} 🎉",
+                        canRetry = false
+                    )
+                } else {
+                    _updateState.value = UpdateState.Idle
+                }
+            }
+        }
+    }
+
+    /** 开始下载最新版 APK */
+    fun startUpdateDownload() {
+        val info = latestUpdateInfo ?: return
+        if (_updateState.value is UpdateState.Downloading) return
+
+        viewModelScope.launch {
+            try {
+                val file = apkDownloader.download(info.downloadUrl) { progress, downloaded, total ->
+                    _updateState.value = UpdateState.Downloading(progress, downloaded, total)
+                }
+                downloadedApkFile = file
+                _updateState.value = UpdateState.DownloadReady
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Error(
+                    "下载失败：${e.message ?: "网络异常"}",
+                    canRetry = true
+                )
+            }
+        }
+    }
+
+    /** 安装新版本（自动替换旧版本）；未授权时引导开启安装权限 */
+    fun installUpdate() {
+        val file = downloadedApkFile ?: return
+        if (!appInstaller.canInstallUnknownApps()) {
+            _updateState.value = UpdateState.NeedInstallPermission
+            return
+        }
+        _updateState.value = UpdateState.Installing
+        val launched = appInstaller.install(file)
+        if (!launched) {
+            _updateState.value = UpdateState.Error(
+                "无法调起系统安装器，请检查是否已开启「允许安装未知应用」权限",
+                canRetry = true
+            )
+        }
+    }
+
+    /** 重试（重新走一遍检测 → 下载） */
+    fun retryUpdate() {
+        latestUpdateInfo?.let {
+            _updateState.value = UpdateState.Found(it)
+        } ?: checkForUpdate(manual = true)
+    }
+
+    /** 最新版本号（用于弹窗在下载/安装阶段持续展示） */
+    val latestVersionName: String?
+        get() = latestUpdateInfo?.versionName
+
+    /** 打开系统「允许安装未知应用」设置页 */
+    fun openInstallPermissionSettings() {
+        appInstaller.openInstallPermissionSettings()
+    }
+
+    /** 关闭更新弹窗 */
+    fun dismissUpdate() {
+        _updateState.value = UpdateState.Idle
     }
 
     private fun startProgressTracker() {

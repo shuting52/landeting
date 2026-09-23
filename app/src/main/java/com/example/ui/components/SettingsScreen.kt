@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
@@ -74,8 +75,10 @@ import com.example.ui.theme.TextSecondary
 fun SettingsScreen(
     settings: PlaybackSettings,
     currentEqPreset: String = "原声HIFI",
+    currentVersion: String = "1.0.1",
     onOpenEqualizer: (() -> Unit)? = null,
     onUpdateSettings: ((PlaybackSettings) -> PlaybackSettings) -> Unit,
+    onCheckUpdate: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     var showQualityDialog by remember { mutableStateOf(false) }
@@ -274,6 +277,16 @@ fun SettingsScreen(
                         onClick = {
                             // Clean cache toast / action
                         }
+                    )
+                    Divider(color = DarkSurfaceBorder, thickness = 0.5.dp)
+
+                    // 8. 版本更新检查
+                    SettingClickItem(
+                        icon = Icons.Default.SystemUpdate,
+                        title = "检查更新",
+                        subtitle = "自动检测最新版本，一键升级到新版 APK",
+                        badge = "v$currentVersion",
+                        onClick = { onCheckUpdate?.invoke() }
                     )
                 }
 

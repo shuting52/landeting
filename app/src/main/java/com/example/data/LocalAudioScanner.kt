@@ -139,6 +139,12 @@ class LocalAudioScanner(private val context: Context) {
             .replace(".flac", "", ignoreCase = true)
             .replace(".wav", "", ignoreCase = true)
             .replace(".m4a", "", ignoreCase = true)
+            .replace(".aac", "", ignoreCase = true)
+            .replace(".ogg", "", ignoreCase = true)
+            .replace(".opus", "", ignoreCase = true)
+            .replace(".ape", "", ignoreCase = true)
+            .replace(".alac", "", ignoreCase = true)
+            .replace(".wma", "", ignoreCase = true)
     }
 
     private fun cleanArtist(raw: String?): String {
