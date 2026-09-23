@@ -1,13 +1,13 @@
 {
   "versionCode": 2,
   "versionName": "1.0.1",
-  "downloadUrl": "https://example.com/landeting-1.0.1.apk",
+  "downloadUrl": "https://github.com/shuting52/landeting/releases/download/v1.0.1/landeting-v1.0.1-release.apk",
   "apkSize": 20609898,
   "forceUpdate": false,
   "md5": "",
   "releaseNotes": [
-    "新增全新动态卡通更新弹窗，升级过程更有趣",
-    "自动检测新版本并下载安装最新 APK",
+    "全新动态卡通更新弹窗，升级过程更有趣",
+    "自动检测新版本，一键下载安装最新 APK",
     "新增网络音乐搜索，海量曲库实时检索",
     "优化本地音乐扫描，更快更准确",
     "修复若干已知问题，播放更稳定"

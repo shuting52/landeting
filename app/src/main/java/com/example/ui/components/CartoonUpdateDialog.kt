@@ -116,7 +116,7 @@ fun CartoonUpdateDialog(
 
     val mood = when (state) {
         is UpdateState.Error -> MascotMood.SAD
-        is UpdateState.Found, UpdateState.DownloadReady, UpdateState.Installing, UpdateState.Done -> MascotMood.HAPPY
+        is UpdateState.Found, UpdateState.DownloadReady, UpdateState.Installing, is UpdateState.Done -> MascotMood.HAPPY
         else -> MascotMood.NEUTRAL
     }
 
@@ -210,7 +210,7 @@ fun CartoonUpdateDialog(
                     InstallingSection()
                 }
 
-                UpdateState.Done -> {
+                is UpdateState.Done -> {
                     DoneSection(onDone = onDone)
                 }
 
@@ -688,9 +688,10 @@ private fun ProgressRing(progress: Float, size: androidx.compose.ui.unit.Dp) {
     Canvas(modifier = Modifier.size(size)) {
         val stroke = 7.dp.toPx()
         val inset = stroke / 2f
+        val minDim = minOf(this.size.width, this.size.height)
         drawCircle(
             color = Color.White.copy(alpha = 0.12f),
-            radius = size.minDimension / 2f - inset,
+            radius = minDim / 2f - inset,
             center = center,
             style = Stroke(width = stroke)
         )
