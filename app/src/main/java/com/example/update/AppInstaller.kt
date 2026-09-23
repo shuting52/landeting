@@ -62,18 +62,20 @@ class AppInstaller(private val context: Context) {
             params.setAppPackageName(context.packageName)
             val sessionId = packageInstaller.createSession(params)
             val session = packageInstaller.openSession(sessionId)
-            try {
-                session.openWrite("landeting_update.apk", 0, apkFile.length()).use { out ->
-                    apkFile.inputStream().use { input -> input.copyTo(out) }
-                }
-            } finally {
-                session.close()
+            
+            // 写入 APK 数据到会话
+            session.openWrite("landeting_update.apk", 0, apkFile.length()).use { out ->
+                apkFile.inputStream().use { input -> input.copyTo(out) }
             }
 
+            // 提交会话（必须在 close 之前调用）
             val intent = Intent(context, UpdateInstallReceiver::class.java)
             val flags = PendingIntentFlags.UPDATE_CURRENT or PendingIntentFlags.IMMUTABLE
             val pending = android.app.PendingIntent.getBroadcast(context, 100, intent, flags)
             session.commit(pending.intentSender)
+            
+            // 提交成功后关闭会话
+            session.close()
             true
         } catch (_: Exception) {
             false

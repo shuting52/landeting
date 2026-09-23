@@ -625,7 +625,20 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                     _updateState.value = UpdateState.Downloading(progress, downloaded, total)
                 }
                 downloadedApkFile = file
-                _updateState.value = UpdateState.DownloadReady
+                
+                // 下载完成后自动触发安装（进度条跑满即自动安装）
+                _updateState.value = UpdateState.Installing
+                val launched = appInstaller.install(file)
+                if (!launched) {
+                    if (!appInstaller.canInstallUnknownApps()) {
+                        _updateState.value = UpdateState.NeedInstallPermission
+                    } else {
+                        _updateState.value = UpdateState.Error(
+                            "无法调起系统安装器，请检查是否已开启「允许安装未知应用」权限",
+                            canRetry = true
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _updateState.value = UpdateState.Error(
                     "下载失败：${e.message ?: "网络异常"}",
