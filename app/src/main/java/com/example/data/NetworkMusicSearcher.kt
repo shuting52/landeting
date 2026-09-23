@@ -15,8 +15,7 @@ import java.util.concurrent.TimeUnit
 /**
  * 真实网络音乐搜索器：
  * 调用网易云音乐公开搜索接口（music.163.com），实时检索全网曲库，
- * 支持任意歌手 / 歌曲名 / 专辑关键词。网络不可用时返回空列表，
- * 由上层回退到内置曲库（OnlineMusicCatalog）。
+ * 支持任意歌手 / 歌曲名 / 专辑关键词。网络不可用时返回空列表。
  */
 object NetworkMusicSearcher {
 

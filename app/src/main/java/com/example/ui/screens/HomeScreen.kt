@@ -52,7 +52,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.MusicRepository
 import com.example.model.AudiobookItem
 import com.example.model.Song
 import com.example.ui.theme.DarkSurface
@@ -76,9 +75,11 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     localSongs: List<Song> = emptyList(),
     isSearching: Boolean = false,
-    onScanLocalSongs: (() -> Unit)? = null
+    onScanLocalSongs: (() -> Unit)? = null,
+    audiobooks: List<AudiobookItem> = emptyList()
 ) {
-    val displaySongs = if (localSongs.isNotEmpty()) localSongs else MusicRepository.localSongs
+    // 歌曲全部来自本地自动识别扫描结果（项目不再内置任何歌曲）
+    val displaySongs = localSongs
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -205,7 +206,7 @@ fun HomeScreen(
                     onPlaySong = onPlaySong
                 )
                 HomeSubTab.AUDIOBOOK -> AudiobookTabContent(
-                    audiobooks = MusicRepository.audiobooks,
+                    audiobooks = audiobooks,
                     onPlayBook = { book ->
                         // Play demo chapter using a sample song structure
                         val song = Song(

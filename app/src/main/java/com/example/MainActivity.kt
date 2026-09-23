@@ -139,6 +139,7 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val showFullScreenPlayer by viewModel.showFullScreenPlayer.collectAsStateWithLifecycle()
     val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
+    val audiobooks = viewModel.audiobooks
 
     var showSettingsScreen by remember { mutableStateOf(false) }
 
@@ -389,11 +390,13 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                             onPlaySong = { viewModel.playSong(it) },
                             localSongs = localSongs,
                             isSearching = isSearching,
-                            onScanLocalSongs = { viewModel.scanLocalSongs() }
+                            onScanLocalSongs = { viewModel.scanLocalSongs() },
+                            audiobooks = audiobooks
                         )
                         MainTab.HIFI -> HifiScreen(
                             currentPlayingSongId = currentSong?.id,
-                            onPlaySong = { viewModel.playSong(it) }
+                            onPlaySong = { viewModel.playSong(it) },
+                            localSongs = localSongs
                         )
                         MainTab.MINE -> MyLibraryScreen(
                             favoriteSongIds = favoriteSongIds,

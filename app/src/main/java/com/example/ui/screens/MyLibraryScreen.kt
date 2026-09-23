@@ -65,7 +65,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.MusicRepository
 import com.example.model.Playlist
 import com.example.model.Song
 import com.example.ui.theme.DarkSurface
@@ -103,8 +102,8 @@ fun MyLibraryScreen(
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var selectedPlaylistForDetail by remember { mutableStateOf<Playlist?>(null) }
 
-    val allSongsMap = remember {
-        (MusicRepository.sampleSongs + MusicRepository.localSongs).associateBy { it.id }
+    val allSongsMap = remember(localSongs) {
+        localSongs.associateBy { it.id }
     }
 
     val favoriteSongs = favoriteSongIds.mapNotNull { allSongsMap[it] }

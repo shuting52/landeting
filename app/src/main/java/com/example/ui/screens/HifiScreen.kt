@@ -54,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.MusicRepository
 import com.example.model.Song
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceBorder
@@ -69,10 +68,12 @@ import com.example.ui.theme.TextSecondary
 fun HifiScreen(
     currentPlayingSongId: String?,
     onPlaySong: (Song) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    localSongs: List<Song> = emptyList()
 ) {
     var spatialAudioActive by remember { mutableStateOf(true) }
-    val hifiSongs = MusicRepository.sampleSongs.filter { it.isHiRes }
+    // Hi-Res 歌曲全部来自本地自动识别扫描结果中支持高解析度的音轨
+    val hifiSongs = localSongs.filter { it.isHiRes }
 
     val infiniteTransition = rememberInfiniteTransition(label = "hifi_wave")
 

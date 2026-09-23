@@ -8,7 +8,6 @@ import com.example.data.EqualizerRepository
 import com.example.data.LocalAudioScanner
 import com.example.data.MusicRepository
 import com.example.data.NetworkMusicSearcher
-import com.example.data.OnlineMusicCatalog
 import com.example.data.local.AppDatabase
 import com.example.model.AudiobookItem
 import com.example.model.BUILT_IN_EQUALIZER_PRESETS
@@ -102,8 +101,8 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _showLyrics = MutableStateFlow(false)
     val showLyrics: StateFlow<Boolean> = _showLyrics.asStateFlow()
 
-    // Active song & playback
-    private val _currentSong = MutableStateFlow<Song?>(MusicRepository.sampleSongs.firstOrNull())
+    // Active song & playback（初始无内置歌曲，等本地扫描完成后由用户选择）
+    private val _currentSong = MutableStateFlow<Song?>(null)
     val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
 
     private val _isPlaying = MutableStateFlow(false)
@@ -115,27 +114,23 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _playMode = MutableStateFlow(PlayMode.SEQUENCE)
     val playMode: StateFlow<PlayMode> = _playMode.asStateFlow()
 
-    private val _playlistQueue = MutableStateFlow<List<Song>>(MusicRepository.sampleSongs)
+    private val _playlistQueue = MutableStateFlow<List<Song>>(emptyList())
     val playlistQueue: StateFlow<List<Song>> = _playlistQueue.asStateFlow()
 
-    // User data
-    private val _favoriteSongIds = MutableStateFlow<Set<String>>(setOf("song_1", "song_2"))
+    // User data（初始为空，由本地扫描结果填充）
+    private val _favoriteSongIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteSongIds: StateFlow<Set<String>> = _favoriteSongIds.asStateFlow()
 
-    private val _recentPlayed = MutableStateFlow<List<Song>>(MusicRepository.sampleSongs.take(4))
+    private val _recentPlayed = MutableStateFlow<List<Song>>(emptyList())
     val recentPlayed: StateFlow<List<Song>> = _recentPlayed.asStateFlow()
 
-    private val _localSongs = MutableStateFlow<List<Song>>(MusicRepository.localSongs)
+    private val _localSongs = MutableStateFlow<List<Song>>(emptyList())
     val localSongs: StateFlow<List<Song>> = _localSongs.asStateFlow()
 
-    private val _customPlaylists = MutableStateFlow<List<Playlist>>(
-        MusicRepository.defaultPlaylists.filter { it.isCustom }
-    )
+    private val _customPlaylists = MutableStateFlow<List<Playlist>>(emptyList())
     val customPlaylists: StateFlow<List<Playlist>> = _customPlaylists.asStateFlow()
 
-    private val _favoritePlaylists = MutableStateFlow<List<Playlist>>(
-        MusicRepository.defaultPlaylists.filter { !it.isCustom }
-    )
+    private val _favoritePlaylists = MutableStateFlow<List<Playlist>>(emptyList())
     val favoritePlaylists: StateFlow<List<Playlist>> = _favoritePlaylists.asStateFlow()
 
     val audiobooks: List<AudiobookItem> = MusicRepository.audiobooks
@@ -273,7 +268,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             audioEngine.pause()
             progressJob?.cancel()
         } else {
-            val song = _currentSong.value ?: MusicRepository.sampleSongs.firstOrNull()
+            val song = _currentSong.value
             if (song != null) {
                 _isPlaying.value = true
                 audioEngine.startPlaying(song.toneFrequency)
@@ -355,20 +350,15 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                         it.genre.contains(query, ignoreCase = true)
             }
 
-            // 2) 真实网络搜索（网易云公开接口），失败/无结果时回退内置曲库
+            // 2) 真实网络搜索（网易云公开接口）；网络不可用或无结果时仅保留本地匹配
             val networkResults = try {
                 NetworkMusicSearcher.search(query)
             } catch (_: Exception) {
                 emptyList()
             }
-            val onlineMatches = if (networkResults.isNotEmpty()) {
-                networkResults
-            } else {
-                OnlineMusicCatalog.search(query)
-            }
 
             // 组合结果去重（本地优先，再补网络）
-            val combined = (localMatches + onlineMatches).distinctBy { "${it.title}_${it.artist}" }
+            val combined = (localMatches + networkResults).distinctBy { "${it.title}_${it.artist}" }
             _searchResults.value = combined
             _isSearching.value = false
         }
@@ -583,7 +573,11 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             delay(1500)
             _recognitionState.value = RecognitionState.Analyzing
             delay(1500)
-            val candidatePool = if (_localSongs.value.isNotEmpty()) _localSongs.value else OnlineMusicCatalog.songs
+            val candidatePool = _localSongs.value
+            if (candidatePool.isEmpty()) {
+                _recognitionState.value = RecognitionState.Idle
+                return@launch
+            }
             val matchedSong = candidatePool.random()
             _recognitionState.value = RecognitionState.Matched(matchedSong, "99.8% 声学指纹匹配")
         }
