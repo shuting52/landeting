@@ -92,7 +92,6 @@ fun CartoonUpdateDialog(
     newVersion: String? = null,
     onStartDownload: () -> Unit,
     onInstall: () -> Unit,
-    onOpenInstallSettings: () -> Unit,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
     onDone: () -> Unit
@@ -196,7 +195,7 @@ fun CartoonUpdateDialog(
             ReleaseNotesBox(notes = info?.releaseNotes ?: listOf("优化使用体验，修复已知问题"))
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 状态区（下载进度 / 火箭 / 彩带 / 错误 / 权限）
+            // 状态区（下载进度 / 火箭 / 彩带 / 错误）
             when (state) {
                 is UpdateState.Downloading -> {
                     DownloadProgressSection(
@@ -222,10 +221,6 @@ fun CartoonUpdateDialog(
                         onDismiss = onDismiss,
                         showDismiss = !isForce
                     )
-                }
-
-                UpdateState.NeedInstallPermission -> {
-                    NeedPermissionSection(onOpenSettings = onOpenInstallSettings, onDismiss = onDismiss)
                 }
 
                 UpdateState.DownloadReady -> {
@@ -936,29 +931,6 @@ private fun ErrorSection(
 }
 
 @Composable
-private fun NeedPermissionSection(onOpenSettings: () -> Unit, onDismiss: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "需要开启「允许安装未知应用」权限\n才能自动安装新版本哦～",
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        GradientButton(
-            text = "去开启权限",
-            gradient = listOf(CuteCyan, CutePurple, CutePink),
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onOpenSettings,
-            pulsing = true
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        TextButtonGhost(text = "暂不更新", onClick = onDismiss)
-    }
-}
-
-@Composable
 private fun ReadyInstallSection(onInstall: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -1033,18 +1005,6 @@ private fun GradientButton(
             fontWeight = FontWeight.ExtraBold
         )
     }
-}
-
-@Composable
-private fun TextButtonGhost(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        color = Color.White.copy(alpha = 0.6f),
-        fontSize = 12.sp,
-        modifier = Modifier
-            .clickable { onClick() }
-            .padding(6.dp)
-    )
 }
 
 /* ==================== 私有工具 ==================== */

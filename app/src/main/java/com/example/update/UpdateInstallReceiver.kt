@@ -17,10 +17,12 @@ class UpdateInstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE).orEmpty()
-        Results.emit(
-            success = status == PackageInstaller.STATUS_SUCCESS,
-            message = message
-        )
+        when (status) {
+            PackageInstaller.STATUS_SUCCESS -> Results.emit(success = true, message = message)
+            // Android 10+ 可能先返回「等待用户确认」，最终结果会再次回调，这里保持等待即可
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> Unit
+            else -> Results.emit(success = false, message = message)
+        }
     }
 
     object Results {

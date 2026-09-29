@@ -469,7 +469,6 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 newVersion = viewModel.latestVersionName,
                 onStartDownload = { viewModel.startUpdateDownload() },
                 onInstall = { viewModel.installUpdate() },
-                onOpenInstallSettings = { viewModel.openInstallPermissionSettings() },
                 onDismiss = { viewModel.dismissUpdate() },
                 onRetry = { viewModel.retryUpdate() },
                 onDone = { viewModel.dismissUpdate() }

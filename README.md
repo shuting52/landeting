@@ -34,20 +34,19 @@ App 启动
    │        ├─ 下载中 (Downloading)      - 进度环 + 均衡器动效
    │        ├─ 安装中 (Installing)       - 火箭发射动画
    │        ├─ 完成 (Done)               - 彩带庆祝动画
-   │        └─ 错误/权限 (Error/NeedInstallPermission)
+   │        └─ 错误 (Error)
    │
    ├─ ApkDownloader.download() → 流式下载到应用专属目录 (无需存储权限)
    │
    └─ AppInstaller.install()
-         ├─ PackageInstaller 系统安装会话（原子化替换旧版本）
-         └─ 兜底 FileProvider + ACTION_VIEW 系统安装器
+         └─ PackageInstaller 系统安装会话（原子化替换旧版本，无需任何权限）
 ```
 
 ### 关键说明
 
 - **「卸载旧版本 + 安装新版本」**：Android 上安装与本地**签名一致、包名相同**的 APK，系统即视为"卸载旧版并安装新版"，数据与账号平滑保留。
 - **签名要求**：旧版（1.0.0）与新版本（1.0.1）必须使用**同一把签名密钥**（`my-upload-key.jks`），否则无法覆盖安装。
-- **权限**：Android 8.0+ 需用户在系统弹窗中允许「安装未知应用」，应用会引导跳转设置页。
+- **权限**：应用更新自身使用 PackageInstaller 系统安装会话，**无需**开启「允许安装未知应用」权限，无需任何运行时授权。
 - **强制更新**：`update.json` 中 `forceUpdate: true` 时，弹窗不可关闭，必须更新才能继续使用。
 
 ### 更新清单 update.json 字段

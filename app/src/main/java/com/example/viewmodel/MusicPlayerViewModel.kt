@@ -211,7 +211,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                     _updateState.value = UpdateState.Done(installed = true)
                 } else {
                     _updateState.value = UpdateState.Error(
-                        message.ifBlank { "安装失败，请检查是否已开启「允许安装未知应用」权限" }
+                        message.ifBlank { "安装失败：请确认新旧版本 APK 使用同一签名密钥，或稍后重试" }
                     )
                 }
             }
@@ -630,14 +630,10 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 _updateState.value = UpdateState.Installing
                 val launched = appInstaller.install(file)
                 if (!launched) {
-                    if (!appInstaller.canInstallUnknownApps()) {
-                        _updateState.value = UpdateState.NeedInstallPermission
-                    } else {
-                        _updateState.value = UpdateState.Error(
-                            "无法调起系统安装器，请检查是否已开启「允许安装未知应用」权限",
-                            canRetry = true
-                        )
-                    }
+                    _updateState.value = UpdateState.Error(
+                        "安装启动失败：${appInstaller.lastError ?: "系统拒绝创建安装会话"}",
+                        canRetry = true
+                    )
                 }
             } catch (e: Exception) {
                 _updateState.value = UpdateState.Error(
@@ -648,18 +644,14 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /** 安装新版本（自动替换旧版本）；未授权时引导开启安装权限 */
+    /** 安装新版本（自动替换旧版本，无需「允许安装未知应用」权限） */
     fun installUpdate() {
         val file = downloadedApkFile ?: return
-        if (!appInstaller.canInstallUnknownApps()) {
-            _updateState.value = UpdateState.NeedInstallPermission
-            return
-        }
         _updateState.value = UpdateState.Installing
         val launched = appInstaller.install(file)
         if (!launched) {
             _updateState.value = UpdateState.Error(
-                "无法调起系统安装器，请检查是否已开启「允许安装未知应用」权限",
+                "安装启动失败：${appInstaller.lastError ?: "系统拒绝创建安装会话"}",
                 canRetry = true
             )
         }
@@ -675,11 +667,6 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     /** 最新版本号（用于弹窗在下载/安装阶段持续展示） */
     val latestVersionName: String?
         get() = latestUpdateInfo?.versionName
-
-    /** 打开系统「允许安装未知应用」设置页 */
-    fun openInstallPermissionSettings() {
-        appInstaller.openInstallPermissionSettings()
-    }
 
     /** 关闭更新弹窗 */
     fun dismissUpdate() {

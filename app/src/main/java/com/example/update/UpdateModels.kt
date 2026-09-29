@@ -79,9 +79,6 @@ sealed class UpdateState {
     /** 正在安装（系统安装会话提交中） */
     object Installing : UpdateState()
 
-    /** 需要用户先开启「允许安装未知应用」权限 */
-    object NeedInstallPermission : UpdateState()
-
     /** 更新成功（PackageInstaller 路径下应用未被杀死时可见） */
     data class Done(val installed: Boolean) : UpdateState()
 

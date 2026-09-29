@@ -1,106 +1,77 @@
 package com.example.update
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.core.content.FileProvider
 import java.io.File
 
 /**
- * APK 安装器：
+ * APK 安装器 —— 纯 PackageInstaller 系统安装会话。
  *
- * 1. 【优先】PackageInstaller 系统安装会话 —— 由系统原子化地完成
- *    「卸载旧版本 + 安装新版本」替换流程，签名一致时自动覆盖，无需额外确认（部分机型仍会弹系统确认）。
- * 2. 【兜底】FileProvider + ACTION_VIEW 调起系统安装器 —— 兼容性最好，同样会自动替换旧版本。
- *
- * 说明：Android 上安装与本地签名一致、包名相同的 APK，系统即视为“卸载旧版本并安装新版本”，
- * 数据与账号可平滑保留；因此两条路径都满足「自动安装新版本、卸载旧版本」的要求。
+ * 关键说明：
+ * 1. 应用更新自身（包名相同、签名一致）时，PackageInstaller 会话安装
+ *    【不需要】「允许安装未知应用」权限，系统直接原子化替换旧版本，数据平滑保留。
+ * 2. 写入 APK 数据后必须先调用 session.fsync(out) 确保数据完整落盘，
+ *    否则部分机型会以空错误信息返回 INSTALL_FAILED —— 这是最常见的安装失败原因。
+ * 3. 安装结果通过 UpdateInstallReceiver 异步回调（成功 / 失败原因）。
  */
 class AppInstaller(private val context: Context) {
 
-    /** 是否已允许「安装未知应用」（Android 8.0+ 需要，用于 FileProvider 路径） */
-    fun canInstallUnknownApps(): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
-                context.packageManager.canRequestPackageInstalls()
-    }
-
-    /** 跳转系统「允许安装未知应用」设置页 */
-    fun openInstallPermissionSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                    Uri.parse("package:${context.packageName}")
-                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                // 部分 ROM 不支持直接跳转，提示用户手动开启
-            }
-        }
-    }
+    /** 上一次安装提交失败的原因（供 UI 展示真实错误信息） */
+    var lastError: String? = null
+        private set
 
     /**
-     * 安装新版本 APK。
-     * @param apkFile 已下载完成的 APK 文件
-     * @return 是否成功调起安装流程（PackageInstaller 会话提交成功 或 已拉起系统安装器）
+     * 安装新版本 APK（无需任何运行时权限）。
+     * @return true = 安装会话已提交，等待系统异步结果（由 UpdateInstallReceiver 回调）；
+     *         false = 提交阶段失败，可通过 [lastError] 查看真实原因。
      */
     fun install(apkFile: File): Boolean {
-        // 优先尝试 PackageInstaller 会话（更“自动”）
-        if (installViaPackageInstaller(apkFile)) return true
-        // 兜底：FileProvider 系统安装器
-        return installViaFileProvider(apkFile)
-    }
+        lastError = null
+        if (!apkFile.exists() || apkFile.length() <= 0L) {
+            lastError = "APK 文件不存在或为空，请重新下载"
+            return false
+        }
 
-    /** PackageInstaller 系统安装会话，成功提交返回 true */
-    private fun installViaPackageInstaller(apkFile: File): Boolean {
+        var session: PackageInstaller.Session? = null
         return try {
             val packageInstaller = context.packageManager.packageInstaller
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+            // 关键：声明安装的是本应用自己，系统按「自我更新」处理，无需未知来源权限
             params.setAppPackageName(context.packageName)
             val sessionId = packageInstaller.createSession(params)
-            val session = packageInstaller.openSession(sessionId)
-            
-            // 写入 APK 数据到会话
+            session = packageInstaller.openSession(sessionId)
+
+            // 流式写入 APK 数据；写入完成后必须 fsync，确保数据完整落盘后再 commit
             session.openWrite("landeting_update.apk", 0, apkFile.length()).use { out ->
                 apkFile.inputStream().use { input -> input.copyTo(out) }
+                session.fsync(out)
             }
 
-            // 提交会话（必须在 close 之前调用）
+            // 提交安装会话，结果通过 UpdateInstallReceiver 广播回调
             val intent = Intent(context, UpdateInstallReceiver::class.java)
-            val flags = PendingIntentFlags.UPDATE_CURRENT or PendingIntentFlags.IMMUTABLE
-            val pending = android.app.PendingIntent.getBroadcast(context, 100, intent, flags)
+            val pending = PendingIntent.getBroadcast(
+                context,
+                REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
             session.commit(pending.intentSender)
-            
-            // 提交成功后关闭会话
-            session.close()
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            lastError = e.message?.takeIf { it.isNotBlank() } ?: "创建安装会话失败"
             false
-        }
-    }
-
-    /** FileProvider + ACTION_VIEW 系统安装器（最通用的兜底方案） */
-    private fun installViaFileProvider(apkFile: File): Boolean {
-        return try {
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        } finally {
+            try {
+                session?.close()
+            } catch (_: Exception) {
+                // 会话关闭失败可忽略
             }
-            context.startActivity(intent)
-            true
-        } catch (_: Exception) {
-            // 无 Activity 可处理安装请求（如权限未开启），由上层提示用户
-            false
         }
     }
 
-    private object PendingIntentFlags {
-        const val UPDATE_CURRENT = android.app.PendingIntent.FLAG_UPDATE_CURRENT
-        const val IMMUTABLE = android.app.PendingIntent.FLAG_IMMUTABLE
+    private companion object {
+        const val REQUEST_CODE = 100
     }
 }
