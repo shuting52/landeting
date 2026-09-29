@@ -1,0 +1,101 @@
+name: Build & Publish APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: 'versionCode (必须大于当前版本)'
+        required: true
+        type: number
+      versionName:
+        description: 'versionName, 如 1.0.2'
+        required: true
+        type: string
+      releaseNotes:
+        description: '更新说明（逗号分隔多条）'
+        required: false
+        default: '修复自动更新安装失败'
+        type: string
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platforms & build-tools
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+          yes | sdkmanager --licenses > /dev/null
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::缺少 secrets.KEYSTORE_B64，请在仓库 Settings → Secrets 添加"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/my-upload-key.jks"
+          # 校验 keystore 可读性（keytool 在 JDK 内）
+          keytool -list -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
+            -storepass "$STORE_PASSWORD" -alias upload > /dev/null || {
+            echo "::error::keystore 密码或 alias 不正确，请检查 secrets"
+            exit 1
+          }
+
+      - name: Build release APK
+        env:
+          APP_VERSION_CODE: ${{ github.event.inputs.versionCode }}
+          APP_VERSION_NAME: ${{ github.event.inputs.versionName }}
+          UPDATE_CHECK_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/update.json
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk \
+             dist/landeting-v${{ github.event.inputs.versionName }}-release.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: landeting-apk
+          path: dist/landeting-*-release.apk
+          if-no-files-found: error
+
+      - name: Publish (commit APK + update.json to main, raw 直链)
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::缺少 secrets.GH_TOKEN，请添加一个有 repo 权限的 token"
+            exit 1
+          fi
+          # 将更新说明拆成多个参数
+          IFS=',' read -ra NOTES <<< "${{ github.event.inputs.releaseNotes }}"
+          bash scripts/publish_update.sh \
+            "dist/landeting-v${{ github.event.inputs.versionName }}-release.apk" \
+            "${{ github.event.inputs.versionCode }}" \
+            "${{ github.event.inputs.versionName }}" \
+            "${NOTES[@]}"
