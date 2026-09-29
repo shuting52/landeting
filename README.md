@@ -141,7 +141,11 @@ app/src/main/java/com/example/
 
 - 更新清单: https://raw.githubusercontent.com/shuting52/landeting/main/update.json
 - v1.0.0 下载: https://github.com/shuting52/landeting/releases/download/v1.0.0/landeting-v1.0.0-release.apk
-- v1.0.1 下载: https://github.com/shuting52/landeting/releases/download/v1.0.1/landeting-v1.0.1-release.apk
+- v1.0.1 下载: https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.0.1-release.apk
+
+> 💡 自 v1.0.1 起，更新采用 **raw 直链下载**：APK 直接存放在仓库 `dist/` 目录，
+> 手机端通过 `raw.githubusercontent.com` 直连下载，发布脚本 `publish_update.sh` 会自动完成
+> 提交 APK → 生成 update.json → 推送 main 分支的全流程。
 
 ## 📜 更新日志
 

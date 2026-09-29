@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-# 懒得听「自动更新发布脚本」
+# 懒得听「自动更新发布脚本」（raw 直链版）
 # 用法:
 #   ./scripts/publish_update.sh <APK路径> <versionCode> <versionName> [更新说明...]
 # 示例:
 #   ./scripts/publish_update.sh dist/landeting-v1.0.2.apk 3 1.0.2 "新增功能" "修复问题"
 # 功能:
 #   1. 校验 APK 元数据 (aapt)
-#   2. 创建/更新 GitHub Release 并上传 APK
-#   3. 自动生成 update.json 更新清单 (versionCode/下载地址/大小/说明)
-#   4. 推送 update.json 到仓库 main 分支
-#   手机端 AppUpdateChecker 检测到 versionCode 增大即自动弹窗 -> 下载 -> 安装
+#   2. 将 APK 提交到仓库 dist/ 目录并推送 main 分支
+#   3. 自动生成 update.json（downloadUrl 为 raw.githubusercontent.com 直链）
+#   4. 连同 update.json 一起推送
+#   手机端 AppUpdateChecker 检测到 versionCode 增大即自动弹窗 -> raw 直连下载 -> 安装
+# 注意: APK 大小需 < 100MB（GitHub raw 单文件限制），当前约 20MB 无压力
 # ============================================================
 set -euo pipefail
 
@@ -39,68 +40,23 @@ fi
 
 APK_SIZE=$(stat -c%s "$APK_PATH")
 APK_BASENAME=$(basename "$APK_PATH")
-TAG_NAME="v${VERSION_NAME}"
-API="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}"
+RAW_BASE="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
+
+if [ "$APK_SIZE" -gt 104857600 ]; then
+  echo "!! APK 超过 100MB，GitHub raw 无法直链，请改用 GitHub Release 方案"
+  exit 1
+fi
 
 echo "==> 发布 ${APK_BASENAME} (versionCode=${VERSION_CODE} / v${VERSION_NAME}, ${APK_SIZE} bytes)"
 
-# ---------- 构造 Release Body ----------
-RELEASE_BODY=$(python3 - "$VERSION_NAME" "${RELEASE_NOTES[@]}" <<'PYEOF'
-import json, sys
-vn = sys.argv[1]
-notes = [n for n in sys.argv[2:] if n.strip()]
-body = "懒得听 v%s 正式版\n" % vn
-if notes:
-    body += "\n".join("- " + n for n in notes)
-else:
-    body += "- 优化使用体验，修复已知问题"
-print(json.dumps(body, ensure_ascii=False))
-PYEOF
-)
-
-# ---------- 创建或更新 Release ----------
-RELEASE_URL="${API}/releases/tags/${TAG_NAME}"
-EXISTING=$(curl -s -H "Authorization: token ${GH_TOKEN}" "$RELEASE_URL" || true)
-if echo "$EXISTING" | python3 -c "import json,sys; json.load(sys.stdin)['id']" 2>/dev/null; then
-  REL_ID=$(echo "$EXISTING" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-  echo "==> Release ${TAG_NAME} 已存在 (id=${REL_ID})，更新信息..."
-  curl -s -X PATCH -H "Authorization: token ${GH_TOKEN}" -H "Content-Type: application/json" \
-    -d "{\"name\":\"懒得听 v${VERSION_NAME}\",\"body\":${RELEASE_BODY}}" \
-    "${API}/releases/${REL_ID}" > /dev/null
-else
-  echo "==> 创建 Release ${TAG_NAME}..."
-  REL_ID=$(curl -s -X POST -H "Authorization: token ${GH_TOKEN}" -H "Content-Type: application/json" \
-    -d "{\"tag_name\":\"${TAG_NAME}\",\"name\":\"懒得听 v${VERSION_NAME}\",\"body\":${RELEASE_BODY},\"draft\":false,\"prerelease\":false}" \
-    "${API}/releases" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-fi
-
-# ---------- 删除同名旧 asset ----------
-OLD_ASSET=$(curl -s -H "Authorization: token ${GH_TOKEN}" "${API}/releases/${REL_ID}/assets" \
-  | python3 -c "
-import json, sys
-for a in json.load(sys.stdin):
-    if a['name'] == '$APK_BASENAME':
-        print(a['id'])
-        break
-")
-if [ -n "${OLD_ASSET:-}" ]; then
-  echo "==> 删除旧 asset ${OLD_ASSET}..."
-  curl -s -X DELETE -H "Authorization: token ${GH_TOKEN}" \
-    "${API}/releases/assets/${OLD_ASSET}" > /dev/null
-fi
-
-# ---------- 上传 APK ----------
-echo "==> 上传 APK..."
-UPLOAD_RESULT=$(curl -s -X POST -H "Authorization: token ${GH_TOKEN}" \
-  -H "Content-Type: application/vnd.android.package-archive" \
-  --data-binary @"${APK_PATH}" \
-  "https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${REL_ID}/assets?name=${APK_BASENAME}")
-DOWNLOAD_URL=$(echo "$UPLOAD_RESULT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('browser_download_url',''))")
-if [ -z "$DOWNLOAD_URL" ]; then
-  echo "!! 上传失败，请检查 token 权限"
-  exit 1
-fi
-echo "==> 下载地址: ${DOWNLOAD_URL}"
+# ---------- 将 APK 放入仓库 dist/ 目录（raw 直链的前提）----------
+DIST_DIR="${ROOT_DIR}/dist"
+mkdir -p "$DIST_DIR"
+DIST_APK="${DIST_DIR}/${APK_BASENAME}"
+cp -f "$APK_PATH" "$DIST_APK"
+DOWNLOAD_URL="${RAW_BASE}/dist/${APK_BASENAME}"
+echo "==> APK 已放入仓库: ${DIST_APK}"
+echo "==> raw 下载地址: ${DOWNLOAD_URL}"
 
 # ---------- 生成 update.json ----------
 NOTES_JSON=$(python3 - "${RELEASE_NOTES[@]}" <<'PYEOF'
@@ -128,15 +84,16 @@ PYEOF
 echo "==> update.json 已生成:"
 cat "${ROOT_DIR}/update.json"
 
-# ---------- 推送 update.json ----------
+# ---------- 推送 APK + update.json ----------
 cd "$ROOT_DIR"
-git add update.json
+git add dist/*.apk update.json
 git -c user.name="${REPO_OWNER}" -c user.email="${REPO_OWNER}@users.noreply.github.com" \
-  commit -m "release: v${VERSION_NAME} (versionCode ${VERSION_CODE})" 2>/dev/null || true
+  commit -m "release: v${VERSION_NAME} (versionCode ${VERSION_CODE}, raw 直链)" 2>/dev/null || true
 git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO_OWNER}/${REPO_NAME}.git" main
 
 echo ""
 echo "✅ 发布完成！"
 echo "   新版本: v${VERSION_NAME} (versionCode ${VERSION_CODE})"
-echo "   更新地址: ${DOWNLOAD_URL}"
-echo "   更新清单: https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/update.json"
+echo "   更新清单: ${RAW_BASE}/update.json"
+echo "   APK 直链: ${DOWNLOAD_URL}"
+echo "   说明: raw 直链有 CDN 缓存，发布后 5 分钟内旧缓存可能仍在，属正常现象"
