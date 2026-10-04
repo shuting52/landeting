@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.AudiobookItem
 import com.example.model.Song
+import com.example.ui.components.SongCover
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceBorder
 import com.example.ui.theme.DarkSurfaceElevated
@@ -62,6 +63,8 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.HomeSubTab
+import com.example.viewmodel.SearchType
+import com.example.viewmodel.SearchType
 
 @Composable
 fun HomeScreen(
@@ -76,7 +79,9 @@ fun HomeScreen(
     localSongs: List<Song> = emptyList(),
     isSearching: Boolean = false,
     onScanLocalSongs: (() -> Unit)? = null,
-    audiobooks: List<AudiobookItem> = emptyList()
+    audiobooks: List<AudiobookItem> = emptyList(),
+    searchType: SearchType = SearchType.ALL,
+    onSearchTypeChange: (SearchType) -> Unit = {}
 ) {
     // 歌曲全部来自本地自动识别扫描结果（项目不再内置任何歌曲）
     val displaySongs = localSongs
@@ -148,12 +153,53 @@ fun HomeScreen(
 
         // If user is searching, show search results view
         if (searchQuery.isNotBlank()) {
+            // 搜索分类筛选：全部 / 单曲 / 歌手
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SearchType.entries.forEach { type ->
+                    val selected = searchType == type
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                else DarkSurfaceElevated
+                            )
+                            .border(
+                                1.dp,
+                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                else DarkSurfaceBorder,
+                                RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onSearchTypeChange(type) }
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = type.label,
+                            color = if (selected) MaterialTheme.colorScheme.primary else TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             SearchResultsSection(
                 query = searchQuery,
                 results = searchResults,
                 isSearching = isSearching,
                 currentPlayingSongId = currentPlayingSongId,
-                onPlaySong = onPlaySong
+                onPlaySong = onPlaySong,
+                searchType = searchType,
+                onSearchArtist = { artistName ->
+                    // 点击歌手 → 切到单曲分类并搜索该歌手热门歌曲
+                    onSearchTypeChange(SearchType.SONG)
+                    onSearchQueryChange("$artistName 热门歌曲")
+                }
             )
         } else {
             // Category Tabs: 热门 / 发现 / 推荐 / 听书
@@ -237,7 +283,9 @@ private fun SearchResultsSection(
     results: List<Song>,
     isSearching: Boolean,
     currentPlayingSongId: String?,
-    onPlaySong: (Song) -> Unit
+    onPlaySong: (Song) -> Unit,
+    searchType: SearchType = SearchType.ALL,
+    onSearchArtist: (String) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -254,7 +302,7 @@ private fun SearchResultsSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "全网 & 本地搜索 “$query” (${results.size})",
+                    text = if (searchType == SearchType.ARTIST) "全网歌手 \"$query\" (${results.size})" else "全网 & 本地搜索 \"$query\" (${results.size})",
                     fontSize = 13.sp,
                     color = TextSecondary
                 )
@@ -276,17 +324,86 @@ private fun SearchResultsSection(
                         .padding(top = 40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "未找到匹配曲目，尝试搜索其它歌手或关键词", color = TextMuted, fontSize = 14.sp)
+                    Text(
+                        text = if (searchType == SearchType.ARTIST) "未找到相关歌手，换个名字试试" else "未找到匹配曲目，尝试搜索其它歌手或关键词",
+                        color = TextMuted,
+                        fontSize = 14.sp
+                    )
                 }
             }
         } else {
             items(results) { song ->
-                SongRowItem(
-                    song = song,
-                    isPlaying = song.id == currentPlayingSongId,
-                    onClick = { onPlaySong(song) }
-                )
+                val isArtist = song.id.startsWith("net_artist_")
+                if (isArtist && searchType == SearchType.ARTIST) {
+                    ArtistResultRow(
+                        song = song,
+                        onClick = { onSearchArtist(song.title) }
+                    )
+                } else {
+                    SongRowItem(
+                        song = song,
+                        isPlaying = song.id == currentPlayingSongId,
+                        onClick = { onPlaySong(song) }
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun ArtistResultRow(
+    song: Song,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SongCover(
+            song = song,
+            size = 48,
+            cornerRadius = 24,
+            modifier = Modifier.size(48.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = song.title,
+                color = TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = song.artist,
+                color = TextSecondary,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+        ) {
+            Text(
+                text = "查看歌曲",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -624,11 +741,11 @@ fun SongRowItem(
                 .background(DarkSurfaceElevated),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = song.coverRes ?: R.drawable.app_icon_art),
-                contentDescription = song.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            SongCover(
+                song = song,
+                size = 44,
+                cornerRadius = 8,
+                modifier = Modifier.fillMaxSize()
             )
             if (isPlaying) {
                 Box(
@@ -722,13 +839,11 @@ fun SongRankingItem(
             modifier = Modifier.width(28.dp)
         )
 
-        Image(
-            painter = painterResource(id = song.coverRes ?: R.drawable.app_icon_art),
-            contentDescription = song.title,
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
+        SongCover(
+            song = song,
+            size = 42,
+            cornerRadius = 8,
+            modifier = Modifier.size(42.dp)
         )
 
         Spacer(modifier = Modifier.width(12.dp))

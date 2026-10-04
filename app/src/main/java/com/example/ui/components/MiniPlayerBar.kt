@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.Song
+import com.example.ui.components.SongCover
 import com.example.ui.theme.DarkSurfaceElevated
 import com.example.ui.theme.HiResGold
 import com.example.ui.theme.TextMuted
@@ -128,14 +129,14 @@ fun MiniPlayerBar(
                     .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = song.coverRes ?: R.drawable.app_icon_art),
-                    contentDescription = song.title,
+                SongCover(
+                    song = song,
+                    size = 34,
+                    cornerRadius = 17,
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .rotate(if (isPlaying) discRotation else 0f),
-                    contentScale = ContentScale.Crop
+                        .rotate(if (isPlaying) discRotation else 0f)
                 )
             }
 

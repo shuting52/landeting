@@ -49,6 +49,13 @@ enum class HomeSubTab(val label: String) {
     AUDIOBOOK("听书")
 }
 
+/** 搜索分类：全部（本地+歌曲）/ 单曲 / 歌手 */
+enum class SearchType(val label: String) {
+    ALL("全部"),
+    SONG("单曲"),
+    ARTIST("歌手")
+}
+
 sealed class RecognitionState {
     object Idle : RecognitionState()
     object Listening : RecognitionState()
@@ -138,6 +145,10 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     // Search state
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // 搜索分类：ALL=歌曲+本地 / SONG=单曲 / ARTIST=歌手
+    private val _searchType = MutableStateFlow(SearchType.ALL)
+    val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
     private val _searchResults = MutableStateFlow<List<Song>>(emptyList())
     val searchResults: StateFlow<List<Song>> = _searchResults.asStateFlow()
@@ -255,6 +266,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         audioEngine.startPlaying(song.toneFrequency, song.uri)
         startProgressTracker()
 
+        // 加入播放队列（不在队列则追加，保证播放列表与切歌正常）
+        val queue = _playlistQueue.value.toMutableList()
+        if (queue.none { it.id == song.id }) {
+            queue.add(song)
+        }
+        _playlistQueue.value = queue
+
         // Update recently played
         val list = _recentPlayed.value.toMutableList()
         list.removeAll { it.id == song.id }
@@ -342,17 +360,24 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             delay(300)
             if (query != _searchQuery.value) return@launch
 
-            // 1) 本地扫描曲库匹配
-            val localMatches = _localSongs.value.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                        it.artist.contains(query, ignoreCase = true) ||
-                        it.album.contains(query, ignoreCase = true) ||
-                        it.genre.contains(query, ignoreCase = true)
-            }
+            val type = _searchType.value
 
-            // 2) 真实网络搜索（网易云公开接口）；网络不可用或无结果时仅保留本地匹配
+            // 1) 本地扫描曲库匹配（全部/单曲分类时参与）
+            val localMatches = if (type != SearchType.ARTIST) {
+                _localSongs.value.filter {
+                    it.title.contains(query, ignoreCase = true) ||
+                            it.artist.contains(query, ignoreCase = true) ||
+                            it.album.contains(query, ignoreCase = true) ||
+                            it.genre.contains(query, ignoreCase = true)
+                }
+            } else emptyList()
+
+            // 2) 真实网络搜索：歌手分类搜歌手，其余搜歌曲
             val networkResults = try {
-                NetworkMusicSearcher.search(query)
+                when (type) {
+                    SearchType.ARTIST -> NetworkMusicSearcher.searchArtists(query)
+                    else -> NetworkMusicSearcher.search(query)
+                }
             } catch (_: Exception) {
                 emptyList()
             }
@@ -361,6 +386,15 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             val combined = (localMatches + networkResults).distinctBy { "${it.title}_${it.artist}" }
             _searchResults.value = combined
             _isSearching.value = false
+        }
+    }
+
+    fun setSearchType(type: SearchType) {
+        if (_searchType.value == type) return
+        _searchType.value = type
+        // 切换分类立即重新搜索
+        if (_searchQuery.value.isNotBlank()) {
+            updateSearchQuery(_searchQuery.value)
         }
     }
 

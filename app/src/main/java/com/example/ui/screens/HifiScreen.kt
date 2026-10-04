@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.Song
+import com.example.ui.components.SongCover
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceBorder
 import com.example.ui.theme.DarkSurfaceElevated
@@ -291,11 +292,11 @@ fun HifiScreen(
                         .clip(RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = song.coverRes ?: R.drawable.hifi_vinyl_cover),
-                        contentDescription = song.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                    SongCover(
+                        song = song,
+                        size = 48,
+                        cornerRadius = 8,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 

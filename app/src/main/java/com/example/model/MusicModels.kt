@@ -34,7 +34,11 @@ data class Song(
     val bitRate: String = "1411kbps",
     val rawLrc: String? = null,
     /** 真实音频源：content:// URI 或文件绝对路径；为空时播放器使用合成器兜底 */
-    val uri: String? = null
+    val uri: String? = null,
+    /** 网络专辑封面 URL（Coil 加载）；为空时使用动态生成封面 */
+    val coverUrl: String? = null,
+    /** 动态封面主色（0xFFRRGGBB）；0 表示按歌手/歌名哈希自动生成 */
+    val coverColor: Long = 0L
 )
 
 data class Playlist(

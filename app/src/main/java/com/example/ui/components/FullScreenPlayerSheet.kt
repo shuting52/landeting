@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -44,6 +46,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -97,6 +100,8 @@ fun FullScreenPlayerSheet(
     isFavorite: Boolean,
     equalizerPreset: String,
     playbackSpeed: Float,
+    playlistQueue: List<Song> = emptyList(),
+    sleepTimerSecondsLeft: Long? = null,
     onClose: () -> Unit,
     onTogglePlay: () -> Unit,
     onNext: () -> Unit,
@@ -106,6 +111,7 @@ fun FullScreenPlayerSheet(
     onToggleFavorite: () -> Unit,
     onSetEqualizer: (String) -> Unit,
     onSetSpeed: (Float) -> Unit,
+    onPlayFromQueue: (Song) -> Unit = {},
     onUpdateLyrics: ((List<com.example.model.LyricLine>) -> Unit)? = null,
     onOpenEqualizer: (() -> Unit)? = null,
     bgDrawableRes: Int? = null
@@ -116,6 +122,7 @@ fun FullScreenPlayerSheet(
     var showEqDialog by remember { mutableStateOf(false) }
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showLrcImportDialog by remember { mutableStateOf(false) }
+    var showPlayMenu by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "player_disc_spin")
     val discRotation by infiniteTransition.animateFloat(
@@ -288,15 +295,15 @@ fun FullScreenPlayerSheet(
                                 )
                             }
 
-                            // Rotating Center Album Art
-                            Image(
-                                painter = painterResource(id = song.coverRes ?: R.drawable.hifi_vinyl_cover),
-                                contentDescription = song.title,
+                            // Rotating Center Album Art（动态歌手封面，网络歌曲加载真实专辑图）
+                            SongCover(
+                                song = song,
+                                size = 150,
+                                cornerRadius = 75,
                                 modifier = Modifier
                                     .size(150.dp)
                                     .clip(CircleShape)
-                                    .rotate(if (isPlaying) discRotation else 0f),
-                                contentScale = ContentScale.Crop
+                                    .rotate(if (isPlaying) discRotation else 0f)
                             )
 
                             // Center Spindle
@@ -451,7 +458,8 @@ fun FullScreenPlayerSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp),
+                        .navigationBarsPadding()
+                        .padding(bottom = 18.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -520,10 +528,11 @@ fun FullScreenPlayerSheet(
                         )
                     }
 
-                    IconButton(onClick = { showLyricsView = !showLyricsView }) {
+                    // 播放菜单（队列 / 定时关闭）
+                    IconButton(onClick = { showPlayMenu = true }) {
                         Icon(
-                            imageVector = Icons.Default.GraphicEq,
-                            contentDescription = "音效",
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "播放菜单",
                             tint = TextSecondary,
                             modifier = Modifier.size(26.dp)
                         )
@@ -643,5 +652,203 @@ fun FullScreenPlayerSheet(
                 onUpdateLyrics?.invoke(newLyrics)
             }
         )
+    }
+
+    // 播放菜单（队列 / 定时关闭 / 收藏 / 模式）
+    if (showPlayMenu) {
+        PlaybackMenuSheet(
+            queue = playlistQueue,
+            currentSongId = song.id,
+            playMode = playMode,
+            isFavorite = isFavorite,
+            sleepTimerSecondsLeft = sleepTimerSecondsLeft,
+            onDismiss = { showPlayMenu = false },
+            onPlayFromQueue = { queuedSong ->
+                showPlayMenu = false
+                onPlayFromQueue(queuedSong)
+            },
+            onTogglePlayMode = onTogglePlayMode,
+            onToggleFavorite = onToggleFavorite
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlaybackMenuSheet(
+    queue: List<Song>,
+    currentSongId: String,
+    playMode: PlayMode,
+    isFavorite: Boolean,
+    sleepTimerSecondsLeft: Long?,
+    onDismiss: () -> Unit,
+    onPlayFromQueue: (Song) -> Unit,
+    onTogglePlayMode: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(),
+        containerColor = DarkSurfaceElevated
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+        ) {
+            // 操作行：收藏 / 播放模式 / 定时关闭
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 收藏
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onToggleFavorite() }
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "收藏",
+                        tint = if (isFavorite) Color.Red else TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = if (isFavorite) "已收藏" else "收藏", color = TextSecondary, fontSize = 11.sp)
+                }
+                // 播放模式
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onTogglePlayMode() }
+                ) {
+                    Icon(
+                        imageVector = when (playMode) {
+                            PlayMode.SEQUENCE -> Icons.Default.Repeat
+                            PlayMode.REPEAT_ONE -> Icons.Default.RepeatOne
+                            PlayMode.SHUFFLE -> Icons.Default.Shuffle
+                        },
+                        contentDescription = playMode.label,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = playMode.label, color = TextSecondary, fontSize = 11.sp)
+                }
+                // 定时关闭状态
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Timer,
+                        contentDescription = "定时关闭",
+                        tint = if (sleepTimerSecondsLeft != null) MaterialTheme.colorScheme.primary else TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (sleepTimerSecondsLeft != null) {
+                            "${sleepTimerSecondsLeft / 60}分后关闭"
+                        } else {
+                            "未定时"
+                        },
+                        color = if (sleepTimerSecondsLeft != null) MaterialTheme.colorScheme.primary else TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 队列标题
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "播放列表（${queue.size}）",
+                    color = TextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "点击歌曲切换播放",
+                    color = TextMuted,
+                    fontSize = 11.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            if (queue.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 30.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "播放列表为空，去搜索或扫描本地音乐吧", color = TextMuted, fontSize = 13.sp)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                ) {
+                    itemsIndexed(queue) { index, queuedSong ->
+                        val isCurrent = queuedSong.id == currentSongId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onPlayFromQueue(queuedSong) }
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = (index + 1).toString(),
+                                color = if (isCurrent) MaterialTheme.colorScheme.primary else TextMuted,
+                                fontSize = 12.sp,
+                                modifier = Modifier.width(28.dp)
+                            )
+                            SongCover(
+                                song = queuedSong,
+                                size = 40,
+                                cornerRadius = 6,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = queuedSong.title,
+                                    color = if (isCurrent) MaterialTheme.colorScheme.primary else TextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = queuedSong.artist,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            if (isCurrent) {
+                                Icon(
+                                    imageVector = if (true) Icons.Default.GraphicEq else Icons.Default.GraphicEq,
+                                    contentDescription = "正在播放",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

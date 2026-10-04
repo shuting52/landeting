@@ -18,9 +18,9 @@ android {
     minSdk = 24
     targetSdk = 36
     // 版本号支持环境变量覆盖（APP_VERSION_CODE / APP_VERSION_NAME），
-    // 便于发布流程一键产出 1.0.3 → 1.0.4 升级演示包。
-    versionCode = System.getenv("APP_VERSION_CODE")?.toIntOrNull() ?: 5
-    versionName = System.getenv("APP_VERSION_NAME") ?: "1.0.4"
+    // 便于发布流程一键产出 1.0.4 → 1.1.0 功能大版本。
+    versionCode = System.getenv("APP_VERSION_CODE")?.toIntOrNull() ?: 6
+    versionName = System.getenv("APP_VERSION_NAME") ?: "1.1.0"
 
     // 版本更新检查地址（生产环境通过环境变量 UPDATE_CHECK_URL 注入；
     // 留空时 AppUpdateChecker 会回退到内置 assets/update_demo.json 演示配置）

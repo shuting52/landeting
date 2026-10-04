@@ -151,6 +151,8 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val favoritePlaylists by viewModel.favoritePlaylists.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val searchType by viewModel.searchType.collectAsStateWithLifecycle()
+    val playlistQueue by viewModel.playlistQueue.collectAsStateWithLifecycle()
     val playbackSettings by viewModel.playbackSettings.collectAsStateWithLifecycle()
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
     val equalizerPreset by viewModel.equalizerPreset.collectAsStateWithLifecycle()
@@ -439,6 +441,8 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                             onPlaySong = { viewModel.playSong(it) },
                             localSongs = localSongs,
                             isSearching = isSearching,
+                            searchType = searchType,
+                            onSearchTypeChange = { viewModel.setSearchType(it) },
                             onScanLocalSongs = {
                                 if (hasAudioPermission(context)) {
                                     viewModel.scanLocalSongs()
@@ -485,6 +489,8 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 isFavorite = favoriteSongIds.contains(currentSong?.id ?: ""),
                 equalizerPreset = equalizerPreset,
                 playbackSpeed = playbackSpeed,
+                playlistQueue = playlistQueue,
+                sleepTimerSecondsLeft = sleepTimerSecondsLeft,
                 onClose = { viewModel.closeFullScreenPlayer() },
                 onTogglePlay = { viewModel.togglePlayPause() },
                 onNext = { viewModel.playNext() },
@@ -494,6 +500,7 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 onToggleFavorite = { currentSong?.id?.let { viewModel.toggleFavorite(it) } },
                 onSetEqualizer = { viewModel.setEqualizerPreset(it) },
                 onSetSpeed = { viewModel.setPlaybackSpeed(it) },
+                onPlayFromQueue = { viewModel.playSong(it) },
                 onUpdateLyrics = { viewModel.updateCurrentSongLyrics(it) },
                 onOpenEqualizer = { viewModel.openEqualizerPanel() },
                 bgDrawableRes = currentTheme.bgDrawableRes
