@@ -665,9 +665,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             try {
-                val file = apkDownloader.download(info.downloadUrl, expectedSize = info.apkSize) { progress, downloaded, total ->
-                    _updateState.value = UpdateState.Downloading(progress, downloaded, total)
-                }
+                val file = apkDownloader.download(
+                    info.downloadUrl,
+                    onProgress = { progress, downloaded, total ->
+                        _updateState.value = UpdateState.Downloading(progress, downloaded, total)
+                    },
+                    expectedSize = info.apkSize
+                )
                 downloadedApkFile = file
                 
                 // 下载完成后自动触发安装（进度条跑满即自动安装）
