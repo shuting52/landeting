@@ -30,7 +30,11 @@ class ApkDownloader(private val context: Context) {
      * @param onProgress   (进度 0..1, 已下载字节, 总字节)
      * @return 下载完成的文件；失败抛出 IOException
      */
-    suspend fun download(url: String, onProgress: (Float, Long, Long) -> Unit): File =
+    suspend fun download(
+        url: String,
+        onProgress: (Float, Long, Long) -> Unit,
+        expectedSize: Long = 0L
+    ): File =
         withContext(Dispatchers.IO) {
             if (url.isBlank() || !url.startsWith("http")) {
                 throw IOException("下载地址无效")
@@ -60,6 +64,10 @@ class ApkDownloader(private val context: Context) {
                 }
                 if (downloaded <= 0L) {
                     throw IOException("下载文件为空")
+                }
+                // 完整性校验：与 update.json 声明的 APK 大小比对，防止下载不完整导致安装失败
+                if (expectedSize > 0L && downloaded != expectedSize) {
+                    throw IOException("下载不完整（${downloaded} != ${expectedSize} 字节），请重试")
                 }
                 target
             }

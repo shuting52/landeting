@@ -60,7 +60,12 @@ class AppInstaller(private val context: Context) {
             session.commit(pending.intentSender)
             true
         } catch (e: Exception) {
-            lastError = e.message?.takeIf { it.isNotBlank() } ?: "创建安装会话失败"
+            val msg = e.message?.takeIf { it.isNotBlank() } ?: "创建安装会话失败"
+            lastError = if (msg.contains("INCOMPATIBLE", ignoreCase = true)) {
+                "签名不一致：新旧版本 APK 使用了不同的签名密钥，无法覆盖升级"
+            } else {
+                msg
+            }
             false
         } finally {
             try {

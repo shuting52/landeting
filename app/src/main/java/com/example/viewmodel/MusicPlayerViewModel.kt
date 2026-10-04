@@ -221,8 +221,18 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 if (success) {
                     _updateState.value = UpdateState.Done(installed = true)
                 } else {
+                    // 签名不一致：明确引导用户卸载旧版重装（Android 不允许不同签名覆盖升级）
+                    val msg = message.ifBlank { "安装失败，请稍后重试" }
                     _updateState.value = UpdateState.Error(
-                        message.ifBlank { "安装失败：请确认新旧版本 APK 使用同一签名密钥，或稍后重试" }
+                        if (msg.contains("INCOMPATIBLE", ignoreCase = true) ||
+                            msg.contains("signature", ignoreCase = true) ||
+                            msg.contains("签名", ignoreCase = true)
+                        ) {
+                            "新旧版本签名不一致，无法覆盖安装。\n\n请到「设置 → 应用 → 懒得听 → 卸载」后，重新安装最新版（v1.1.0），之后即可正常自动更新。"
+                        } else {
+                            "安装失败：$msg"
+                        },
+                        canRetry = false
                     )
                 }
             }
@@ -655,7 +665,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             try {
-                val file = apkDownloader.download(info.downloadUrl) { progress, downloaded, total ->
+                val file = apkDownloader.download(info.downloadUrl, expectedSize = info.apkSize) { progress, downloaded, total ->
                     _updateState.value = UpdateState.Downloading(progress, downloaded, total)
                 }
                 downloadedApkFile = file
