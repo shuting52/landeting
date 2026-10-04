@@ -141,6 +141,7 @@ app/src/main/java/com/example/
 - 更新清单: https://raw.githubusercontent.com/shuting52/landeting/main/update.json
 - v1.0.0 下载: https://github.com/shuting52/landeting/releases/download/v1.0.0/landeting-v1.0.0-release.apk
 - v1.0.1 下载: https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.0.1-release.apk
+- v1.0.2 下载: https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.0.2-release.apk
 
 > 💡 自 v1.0.1 起，更新采用 **raw 直链下载**：APK 直接存放在仓库 `dist/` 目录，
 > 手机端通过 `raw.githubusercontent.com` 直连下载，发布脚本 `publish_update.sh` 会自动完成
@@ -148,6 +149,11 @@ app/src/main/java/com/example/
 
 ## 📜 更新日志
 
+- **v1.0.2** (2026)
+  - 修复本地音乐无法扫描检测（新增运行时权限请求 READ_MEDIA_AUDIO / READ_EXTERNAL_STORAGE）
+  - 修复自动更新安装失败（fsync 落盘校验、移除未知来源权限依赖）
+  - 新增 GitHub Actions 自动构建发布 workflow
+  - 版本号 versionCode 2 → 3
 - **v1.0.1** (2026)
   - 全新动态卡通更新弹窗
   - 自动检测新版本，一键下载安装最新 APK
