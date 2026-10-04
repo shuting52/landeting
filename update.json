@@ -1,13 +1,13 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
-  "downloadUrl": "https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.0.3-release.apk",
+  "versionCode": 5,
+  "versionName": "1.0.4",
+  "downloadUrl": "https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.0.4-release.apk",
   "apkSize": 20592942,
   "forceUpdate": false,
   "md5": "",
   "releaseNotes": [
-    "更新弹窗优化：点击立即更新后下载完成自动直接安装",
-    "彻底移除未知来源授权步骤",
-    "修复本地音乐无法扫描检测"
+    "修复本地音乐播放的是内置合成音而非真实音频文件",
+    "播放真实本地音频文件",
+    "优化播放体验"
   ]
 }
