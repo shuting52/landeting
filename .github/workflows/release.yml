@@ -31,12 +31,22 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          # runner 预装 Android SDK，无需第三方 action（setup-android@v3 存在已知 bug）
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" 2>/dev/null || echo "ANDROID_HOME not set"
 
       - name: Install SDK platforms & build-tools
         run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
-          yes | sdkmanager --licenses > /dev/null
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(ls "${SDK_ROOT}"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)"
+          echo "Using sdkmanager: ${SDKMANAGER:-<not found>}"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::sdkmanager not found in ${SDK_ROOT}/cmdline-tools"
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" 2>&1 | tail -5
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
