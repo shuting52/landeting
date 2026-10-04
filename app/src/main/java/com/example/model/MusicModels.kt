@@ -29,10 +29,12 @@ data class Song(
     val soundQuality: SoundQuality = SoundQuality.SQ_LOSSLESS,
     val isHiRes: Boolean = false,
     val coverRes: Int? = null,
-    val toneFrequency: Float = 440f, // For melody synthesizer
+    val toneFrequency: Float = 440f, // For melody synthesizer fallback
     val genre: String = "流行",
     val bitRate: String = "1411kbps",
-    val rawLrc: String? = null
+    val rawLrc: String? = null,
+    /** 真实音频源：content:// URI 或文件绝对路径；为空时播放器使用合成器兜底 */
+    val uri: String? = null
 )
 
 data class Playlist(

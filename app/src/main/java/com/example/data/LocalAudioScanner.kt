@@ -112,7 +112,8 @@ class LocalAudioScanner(private val context: Context) {
                             toneFrequency = toneFreq,
                             genre = if (isHiRes) "本地Hi-Res母带" else "本地识别无损",
                             bitRate = bitRate,
-                            lyrics = lyrics
+                            lyrics = lyrics,
+                            uri = contentUri.toString()
                         )
                     )
                 }
@@ -203,7 +204,8 @@ class LocalAudioScanner(private val context: Context) {
                                     lyrics = listOf(
                                         LyricLine(0, "$title - 本地音轨"),
                                         LyricLine(4000, "本地存储直接解码播放中")
-                                    )
+                                    ),
+                                    uri = file.absolutePath
                                 )
                             )
                         }

@@ -58,7 +58,7 @@ sealed class RecognitionState {
 
 class MusicPlayerViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val audioEngine = AudioEngine()
+    private val audioEngine = AudioEngine(application)
     private val equalizerRepository = EqualizerRepository(AppDatabase.getInstance(application).equalizerDao())
     private val localAudioScanner = LocalAudioScanner(application)
     private val appUpdateChecker = AppUpdateChecker(application)
@@ -252,7 +252,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _currentSong.value = song
         _currentPositionMs.value = 0L
         _isPlaying.value = true
-        audioEngine.startPlaying(song.toneFrequency)
+        audioEngine.startPlaying(song.toneFrequency, song.uri)
         startProgressTracker()
 
         // Update recently played
@@ -271,7 +271,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             val song = _currentSong.value
             if (song != null) {
                 _isPlaying.value = true
-                audioEngine.startPlaying(song.toneFrequency)
+                audioEngine.resume(song.toneFrequency, song.uri)
                 startProgressTracker()
             }
         }
@@ -665,12 +665,22 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         progressJob = viewModelScope.launch {
             while (isActive && _isPlaying.value) {
                 delay(500)
-                val duration = _currentSong.value?.durationMs ?: 1L
-                val nextPos = _currentPositionMs.value + (500 * _playbackSpeed.value).toLong()
-                if (nextPos >= duration) {
-                    playNext()
+                // 播放真实音频时使用 MediaPlayer 真实位置；合成器兜底时按模拟进度
+                if (audioEngine.isRealAudioPlaying()) {
+                    val pos = audioEngine.currentPosition()
+                    _currentPositionMs.value = pos
+                    val dur = audioEngine.duration()
+                    if (dur > 0 && pos >= dur - 300) {
+                        playNext()
+                    }
                 } else {
-                    _currentPositionMs.value = nextPos
+                    val duration = _currentSong.value?.durationMs ?: 1L
+                    val nextPos = _currentPositionMs.value + (500 * _playbackSpeed.value).toLong()
+                    if (nextPos >= duration) {
+                        playNext()
+                    } else {
+                        _currentPositionMs.value = nextPos
+                    }
                 }
             }
         }
