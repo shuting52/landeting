@@ -1,11 +1,18 @@
 package com.example
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,6 +45,8 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,8 +58,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -110,6 +122,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** 本地音乐扫描所需的运行时权限：Android 13+ 用 READ_MEDIA_AUDIO，旧版用 READ_EXTERNAL_STORAGE */
+private fun requiredAudioPermissions(): Array<String> =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
+    } else {
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+
+private fun hasAudioPermission(context: Context): Boolean =
+    requiredAudioPermissions().all {
+        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
+
 @Composable
 fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val showSplash by viewModel.showSplash.collectAsStateWithLifecycle()
@@ -142,6 +167,30 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
     val audiobooks = viewModel.audiobooks
 
     var showSettingsScreen by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
+    // 运行时权限请求：Android 6.0+ 必须先获得「音乐/存储」权限才能扫描本地音乐
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val granted = grants.values.any { it }
+        if (granted) {
+            viewModel.scanLocalSongs()
+        } else {
+            showPermissionDialog = true
+        }
+    }
+
+    // 首次进入 App 自动请求权限；已授权则直接自动扫描本地音乐
+    LaunchedEffect(Unit) {
+        if (hasAudioPermission(context)) {
+            viewModel.scanLocalSongs()
+        } else {
+            audioPermissionLauncher.launch(requiredAudioPermissions())
+        }
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -390,7 +439,13 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                             onPlaySong = { viewModel.playSong(it) },
                             localSongs = localSongs,
                             isSearching = isSearching,
-                            onScanLocalSongs = { viewModel.scanLocalSongs() },
+                            onScanLocalSongs = {
+                                if (hasAudioPermission(context)) {
+                                    viewModel.scanLocalSongs()
+                                } else {
+                                    audioPermissionLauncher.launch(requiredAudioPermissions())
+                                }
+                            },
                             audiobooks = audiobooks
                         )
                         MainTab.HIFI -> HifiScreen(
@@ -472,6 +527,24 @@ fun MusicAppRoot(viewModel: MusicPlayerViewModel) {
                 onDismiss = { viewModel.dismissUpdate() },
                 onRetry = { viewModel.retryUpdate() },
                 onDone = { viewModel.dismissUpdate() }
+            )
+        }
+
+        // 本地音乐权限被拒绝时的引导弹窗
+        if (showPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { showPermissionDialog = false },
+                title = { Text("需要音乐权限") },
+                text = { Text("懒得听需要「音乐和音频」访问权限，才能扫描并播放您设备上的本地音乐文件。请授权后重试。") },
+                confirmButton = {
+                    Button(onClick = {
+                        showPermissionDialog = false
+                        audioPermissionLauncher.launch(requiredAudioPermissions())
+                    }) { Text("重新授权") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPermissionDialog = false }) { Text("暂不") }
+                }
             )
         }
     }
