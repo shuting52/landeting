@@ -92,7 +92,7 @@ jobs:
           path: dist/landeting-*-release.apk
           if-no-files-found: error
 
-      - name: Publish (commit APK + update.json to main, raw 直链)
+      - name: Publish (commit APK + update.json via GitHub API, raw 直链)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
@@ -104,7 +104,7 @@ jobs:
           fi
           # 将更新说明拆成多个参数
           IFS=',' read -ra NOTES <<< "${{ github.event.inputs.releaseNotes }}"
-          bash scripts/publish_update.sh \
+          bash scripts/publish_api.sh \
             "dist/landeting-v${{ github.event.inputs.versionName }}-release.apk" \
             "${{ github.event.inputs.versionCode }}" \
             "${{ github.event.inputs.versionName }}" \
