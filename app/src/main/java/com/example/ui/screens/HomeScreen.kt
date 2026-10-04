@@ -64,7 +64,6 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.viewmodel.HomeSubTab
 import com.example.viewmodel.SearchType
-import com.example.viewmodel.SearchType
 
 @Composable
 fun HomeScreen(
