@@ -53,9 +53,14 @@ echo "==> 发布 ${APK_BASENAME} (versionCode=${VERSION_CODE} / v${VERSION_NAME}
 DIST_DIR="${ROOT_DIR}/dist"
 mkdir -p "$DIST_DIR"
 DIST_APK="${DIST_DIR}/${APK_BASENAME}"
-cp -f "$APK_PATH" "$DIST_APK"
+# CI 流程可能已把 APK 放入 dist/ 目录，相同路径时跳过复制，避免 cp 自复制报错
+if [ "$(realpath "$APK_PATH")" != "$(realpath "$DIST_APK")" ]; then
+  cp -f "$APK_PATH" "$DIST_APK"
+  echo "==> APK 已放入仓库: ${DIST_APK}"
+else
+  echo "==> APK 已在 dist/ 目录，无需复制: ${DIST_APK}"
+fi
 DOWNLOAD_URL="${RAW_BASE}/dist/${APK_BASENAME}"
-echo "==> APK 已放入仓库: ${DIST_APK}"
 echo "==> raw 下载地址: ${DOWNLOAD_URL}"
 
 # ---------- 生成 update.json ----------
