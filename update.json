@@ -1,15 +1,12 @@
 {
-  "versionCode": 6,
-  "versionName": "1.1.0",
-  "downloadUrl": "https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.1.0-release.apk",
+  "versionCode": 7,
+  "versionName": "1.1.1",
+  "downloadUrl": "https://raw.githubusercontent.com/shuting52/landeting/main/dist/landeting-v1.1.1-release.apk",
   "apkSize": 20625706,
   "forceUpdate": false,
   "md5": "",
   "releaseNotes": [
-    "播放按钮位置优化",
-    "动态歌手封面",
-    "新增播放菜单与队列",
-    "真实全网搜索（歌手/歌单）",
-    "播放队列修复"
+    "自动更新安装增强：签名不一致明确引导",
+    "下载完整性校验"
   ]
 }
