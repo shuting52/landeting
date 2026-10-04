@@ -20,7 +20,7 @@ class ApkDownloader(private val context: Context) {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    /** 下载目标文件（应用外部专属目录，FileProvider 可正常分享给系统安装器） */
+    /** 下载目标文件（应用外部专属目录，安装时由 PackageInstaller 会话直接读取，无需存储/未知来源权限） */
     fun targetFile(): File =
         File(context.getExternalFilesDir(null) ?: context.filesDir, "landeting_update.apk")
 

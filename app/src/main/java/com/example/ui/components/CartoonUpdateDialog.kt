@@ -91,7 +91,6 @@ fun CartoonUpdateDialog(
     currentVersion: String,
     newVersion: String? = null,
     onStartDownload: () -> Unit,
-    onInstall: () -> Unit,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
     onDone: () -> Unit
@@ -115,7 +114,7 @@ fun CartoonUpdateDialog(
 
     val mood = when (state) {
         is UpdateState.Error -> MascotMood.SAD
-        is UpdateState.Found, UpdateState.DownloadReady, UpdateState.Installing, is UpdateState.Done -> MascotMood.HAPPY
+        is UpdateState.Found, UpdateState.Installing, is UpdateState.Done -> MascotMood.HAPPY
         else -> MascotMood.NEUTRAL
     }
 
@@ -221,10 +220,6 @@ fun CartoonUpdateDialog(
                         onDismiss = onDismiss,
                         showDismiss = !isForce
                     )
-                }
-
-                UpdateState.DownloadReady -> {
-                    ReadyInstallSection(onInstall = onInstall)
                 }
 
                 UpdateState.Checking -> {
@@ -927,32 +922,6 @@ private fun ErrorSection(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ReadyInstallSection(onInstall: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "新版本已下载完成 🎁",
-            color = CuteYellow,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        GradientButton(
-            text = "立即安装",
-            gradient = listOf(CuteGreen, CuteCyan, CutePurple),
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onInstall,
-            pulsing = true
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "安装时将自动卸载旧版本并安装新版本",
-            color = Color.White.copy(alpha = 0.55f),
-            fontSize = 10.5.sp
-        )
     }
 }
 

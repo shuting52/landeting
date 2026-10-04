@@ -73,10 +73,7 @@ sealed class UpdateState {
         val totalBytes: Long
     ) : UpdateState()
 
-    /** APK 已下载完毕，等待安装 */
-    object DownloadReady : UpdateState()
-
-    /** 正在安装（系统安装会话提交中） */
+    /** 正在安装（系统安装会话提交中，下载完成后自动进入） */
     object Installing : UpdateState()
 
     /** 更新成功（PackageInstaller 路径下应用未被杀死时可见） */

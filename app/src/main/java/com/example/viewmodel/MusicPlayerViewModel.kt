@@ -644,19 +644,6 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /** 安装新版本（自动替换旧版本，无需「允许安装未知应用」权限） */
-    fun installUpdate() {
-        val file = downloadedApkFile ?: return
-        _updateState.value = UpdateState.Installing
-        val launched = appInstaller.install(file)
-        if (!launched) {
-            _updateState.value = UpdateState.Error(
-                "安装启动失败：${appInstaller.lastError ?: "系统拒绝创建安装会话"}",
-                canRetry = true
-            )
-        }
-    }
-
     /** 重试（重新走一遍检测 → 下载） */
     fun retryUpdate() {
         latestUpdateInfo?.let {
